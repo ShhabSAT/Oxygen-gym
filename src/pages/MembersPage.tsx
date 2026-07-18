@@ -72,6 +72,8 @@ export function MembersPage() {
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
+      // Skip empty/stub profiles (no name or whitespace-only name)
+      if (!m.name?.trim()) return false
       if (genderFilter !== 'all' && m.gender !== genderFilter) return false
       const status = getMemberStatus(m, subsByMember[m.id] ?? [])
       if (statusFilter !== 'all' && status !== statusFilter) return false

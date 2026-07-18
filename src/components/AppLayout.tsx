@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, Users, ScrollText, SlidersHorizontal, Dumbbell, LogOut } from 'lucide-react'
+import { Home, Users, ScrollText, SlidersHorizontal, LogOut } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SupervisorSwitcher } from '../components/SupervisorSwitcher'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -30,10 +30,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const Sidebar = (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-s md:border-oxygen-silver/10 md:bg-oxygen-black">
       <div className="flex items-center gap-3 px-6 py-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-oxygen-red">
-          <Dumbbell className="h-5 w-5 text-white" />
-        </div>
-        <h1 className="text-xl font-extrabold text-oxygen-silver-light">أكسجين جيم</h1>
+        <img src="/favicon.png" alt="Oxygen Gym" className="h-12 w-12 object-contain" />
+        <h1 className="text-xl font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
@@ -64,10 +62,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-oxygen-silver/10 bg-oxygen-black/95 px-4 py-3 backdrop-blur md:px-6">
           <div className="flex items-center gap-3 md:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-oxygen-red">
-              <Dumbbell className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-lg font-extrabold text-oxygen-silver-light">أكسجين جيم</h1>
+            <img src="/favicon.png" alt="Oxygen Gym" className="h-10 w-10 object-contain" />
+            <h1 className="text-lg font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
           </div>
           <div className="hidden md:block text-sm text-oxygen-silver">نظام إدارة النادي</div>
           <div className="flex items-center gap-2">

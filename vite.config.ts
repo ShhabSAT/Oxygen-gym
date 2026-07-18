@@ -7,10 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/icon.svg', 'icons/maskable.svg'],
+      includeAssets: ['favicon.png', 'icons/icon-512.png'],
       manifest: {
-        name: 'أكسجين جيم',
-        short_name: 'أكسجين',
+        name: 'Oxygen Gym',
+        short_name: 'Oxygen Gym',
         description: 'تطبيق إدارة نادي أكسجين الرياضي',
         lang: 'ar',
         dir: 'rtl',
@@ -23,16 +23,16 @@ export default defineConfig({
         categories: ['business', 'productivity', 'health'],
         icons: [
           {
-            src: 'icons/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icons/icon-512.png',
+            sizes: '192x192',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'icons/maskable.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'maskable',
+            src: 'icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
           },
         ],
       },
