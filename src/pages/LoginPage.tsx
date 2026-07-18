@@ -22,7 +22,7 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="min-h-screen bg-oxygen-black-deep text-white flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm flex flex-col items-center gap-6">
-          <img src="/favicon.png" alt="Oxygen Gym" className="h-28 w-28 object-contain" />
+          <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-28 w-28 object-contain" />
           <div className="text-center">
             <h1 className="text-3xl font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
           <p className="mt-1 text-oxygen-silver font-medium">تسجيل الدخول إلى النظام</p>

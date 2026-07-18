@@ -30,7 +30,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const Sidebar = (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-s md:border-oxygen-silver/10 md:bg-oxygen-black">
       <div className="flex items-center gap-3 px-6 py-6">
-        <img src="/favicon.png" alt="Oxygen Gym" className="h-12 w-12 object-contain" />
+        <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-12 w-12 object-contain" />
         <h1 className="text-xl font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -62,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-oxygen-silver/10 bg-oxygen-black/95 px-4 py-3 backdrop-blur md:px-6">
           <div className="flex items-center gap-3 md:hidden">
-            <img src="/favicon.png" alt="Oxygen Gym" className="h-10 w-10 object-contain" />
+            <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-10 w-10 object-contain" />
             <h1 className="text-lg font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
           </div>
           <div className="hidden md:block text-sm text-oxygen-silver">نظام إدارة النادي</div>
