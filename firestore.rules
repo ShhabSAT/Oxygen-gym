@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Oxygen Gym — single shared-login internal tool.
+//
+// There is ONE shared login (the app's own auth screen), not per-user
+// Firebase Auth accounts. So we do NOT write per-user `request.auth.uid`
+// rules — that would lock everyone out. Instead we:
+//   1. Require that the request is authenticated (a Firebase Auth user
+//      exists). We recommend creating a SINGLE service account / anonymous
+//      or fixed auth user for the app, OR (simpler) enable Firebase
+//      Anonymous Auth and accept any signed-in user.
+//   2. Lock reads/writes to the known collection names (deny unknown paths).
+//   3. Do NOT allow open/test mode (no `allow read, write: if true`).
+//
+// To enable these rules as-is you must turn on Firebase Anonymous Auth in
+// the console, OR swap the `request.auth` check below for your chosen
+// auth mechanism. If you prefer "anyone with the API key" (still NOT fully
+// public, since the API key alone is not a security boundary), replace the
+// `request.auth != null` condition with `true` — but that is less safe.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only the app's collections are accessible.
+    match /{collection}/{docId} {
+      allow read, write: if collection in [
+        'members',
+        'subscriptions',
+        'payments',
+        'freezes',
+        'activityLog',
+        'subscriptionTypes'
+      ]
+      && request.auth != null;
+    }
+  }
+}

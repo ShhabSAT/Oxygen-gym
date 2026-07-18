@@ -1,0 +1,19 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment files (contain secrets)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
