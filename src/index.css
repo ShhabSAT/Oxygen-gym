@@ -19,6 +19,10 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overscroll-behavior-y: contain;
+    /* Disables double-tap zoom + the 300ms tap delay on iOS Safari (the
+     * cleanest cross-browser way, complementing the viewport meta + gesture
+     * blocker in index.html). Intentional for this internal staff PWA. */
+    touch-action: manipulation;
   }
 
   /*

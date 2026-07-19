@@ -267,7 +267,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
           label="ملاحظات (اختياري)"
           value={notes}
           onChange={setNotes}
-          placeholder="أي ملاحظات"
+          placeholder="أي ملاحظات"  
         />
 
         <div className="mt-2 flex flex-col gap-2">
