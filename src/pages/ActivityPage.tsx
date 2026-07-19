@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Pencil,
   Tag,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { onActivityLogChange } from '../lib/store'
 import { useLiveData, type LiveSource } from '../lib/useLiveData'
+import { PTR_EVENT } from '../components/PullToRefresh'
 import type { ActivityActionType, ActivityLog } from '../types'
 
 const ICONS: Record<ActivityActionType, LucideIcon> = {
@@ -58,6 +59,19 @@ export function ActivityPage() {
     },
   ]
   const { loading, error, retry } = useLiveData(sources)
+
+  // Pull-to-refresh: re-fetch this page's data when the gesture fires.
+  useEffect(() => {
+    const onPtr = () => {
+      retry()
+      window.setTimeout(
+        () => window.dispatchEvent(new CustomEvent(PTR_EVENT + ':done')),
+        800,
+      )
+    }
+    window.addEventListener(PTR_EVENT, onPtr)
+    return () => window.removeEventListener(PTR_EVENT, onPtr)
+  }, [retry])
 
   const items = useMemo(() => logs, [logs])
 

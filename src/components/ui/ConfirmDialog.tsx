@@ -40,10 +40,10 @@ export function ConfirmDialog({
       aria-label={title}
     >
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70"
         onClick={onCancel}
       />
-      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-oxygen-black p-5 ring-1 ring-oxygen-silver/20 shadow-2xl shadow-black/60">
+      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-oxygen-black p-5 ring-1 ring-oxygen-silver/20 shadow-lg shadow-black/50">
         <h3 className="text-lg font-bold text-oxygen-silver-light">{title}</h3>
         <p className="mt-2 text-sm text-oxygen-silver">{message}</p>
         <div className="mt-5 flex gap-3">

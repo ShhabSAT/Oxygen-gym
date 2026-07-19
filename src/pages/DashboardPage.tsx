@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -17,6 +17,7 @@ import {
   onPaymentsChange,
 } from '../lib/store'
 import { useLiveData, type LiveSource } from '../lib/useLiveData'
+import { PTR_EVENT } from '../components/PullToRefresh'
 import {
   getOutstandingDebts,
   groupExpiringSoon,
@@ -84,6 +85,20 @@ export function DashboardPage() {
     },
   ]
   const { loading, error, retry } = useLiveData(sources)
+
+  // Pull-to-refresh: re-fetch this page's data when the gesture fires.
+  useEffect(() => {
+    const onPtr = () => {
+      retry()
+      // Offline-first cache snapshot arrives in ms; give a brief branded spin.
+      window.setTimeout(
+        () => window.dispatchEvent(new CustomEvent(PTR_EVENT + ':done')),
+        800,
+      )
+    }
+    window.addEventListener(PTR_EVENT, onPtr)
+    return () => window.removeEventListener(PTR_EVENT, onPtr)
+  }, [retry])
 
   const expiring = groupExpiringSoon(members, subsByMember)
   const debts = getOutstandingDebts(members, subsByMember, paymentsBySub)

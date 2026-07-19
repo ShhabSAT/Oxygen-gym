@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Users, WifiOff, RefreshCw } from 'lucide-react'
+import { ChevronDown, Plus, Search, Users, WifiOff, RefreshCw } from 'lucide-react'
 import {
   getMemberStatus,
   STATUS_LABELS,
@@ -13,6 +14,7 @@ import {
   onSubscriptionTypesChange,
 } from '../lib/store'
 import { useLiveData, type LiveSource } from '../lib/useLiveData'
+import { PTR_EVENT } from '../components/PullToRefresh'
 import { RegisterSheet } from '../components/members/RegisterSheet'
 import type {
   Gender,
@@ -69,6 +71,19 @@ export function MembersPage() {
     },
   ]
   const { loading, error, retry } = useLiveData(sources)
+
+  // Pull-to-refresh: re-fetch this page's data when the gesture fires.
+  useEffect(() => {
+    const onPtr = () => {
+      retry()
+      window.setTimeout(
+        () => window.dispatchEvent(new CustomEvent(PTR_EVENT + ':done')),
+        800,
+      )
+    }
+    window.addEventListener(PTR_EVENT, onPtr)
+    return () => window.removeEventListener(PTR_EVENT, onPtr)
+  }, [retry])
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
@@ -152,18 +167,21 @@ export function MembersPage() {
           />
         </div>
 
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="h-11 rounded-xl bg-oxygen-black px-4 text-white outline-none ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
-        >
-          <option value="all">كل أنواع الاشتراكات</option>
-          {types.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="h-11 w-full appearance-none rounded-xl bg-oxygen-black ps-4 pe-10 text-white outline-none ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
+          >
+            <option value="all">كل أنواع الاشتراكات</option>
+            {types.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute end-3 top-1/2 h-5 w-5 -translate-y-1/2 text-oxygen-silver" />
+        </div>
       </div>
 
       {error ? (
@@ -217,13 +235,19 @@ export function MembersPage() {
         </div>
       )}
 
-      <button
-        onClick={() => setRegisterOpen(true)}
-        aria-label="تسجيل عضو جديد"
-        className="fixed bottom-24 end-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-oxygen-red shadow-lg shadow-oxygen-red/30 transition-colors hover:bg-oxygen-red-dark md:bottom-6"
-      >
-        <Plus className="h-7 w-7 text-white" />
-      </button>
+      {createPortal(
+        <button
+          onClick={() => setRegisterOpen(true)}
+          aria-label="تسجيل عضو جديد"
+          className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full bg-oxygen-red text-white shadow-lg shadow-oxygen-red/30 transition-colors hover:bg-oxygen-red-dark end-4 md:end-6 md:bottom-6"
+          style={{
+            bottom: 'calc(92px + env(safe-area-inset-bottom))',
+          }}
+        >
+          <Plus className="h-7 w-7" />
+        </button>,
+        document.body,
+      )}
 
       <RegisterSheet
         open={registerOpen}

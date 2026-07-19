@@ -8,4 +8,4 @@ export const STORAGE_KEYS = {
   supervisor: 'oxygen_supervisor',
 }
 
-export const SUPERVISORS = ['أحمد', 'محمد', 'علي', 'سارة', 'فاطمة']
+export const SUPERVISORS = ['طارق', 'رامي', 'مشرف ن1', 'مشرف ن2']

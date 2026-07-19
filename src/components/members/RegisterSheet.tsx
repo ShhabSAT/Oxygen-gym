@@ -267,7 +267,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
           label="ملاحظات (اختياري)"
           value={notes}
           onChange={setNotes}
-          placeholder="أي ملاحظات عن العضو"
+          placeholder="أي ملاحظات"
         />
 
         <div className="mt-2 flex flex-col gap-2">
@@ -343,7 +343,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
         </div>
 
         <TextField
-          label={overridePrice ? 'السعر الفعلي (يدوي)' : 'السعر الفعلي (محسوب)'}
+          label={overridePrice ? 'السعر الفعلي' : 'السعر الفعلي'}
           value={actualPrice}
           onChange={setActualPrice}
           type="number"
@@ -359,7 +359,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
         )}
 
         <TextField
-          label="الدفعة الأولى (0 مسموح)"
+          label="الدفعة الأولى"
           value={initialPayment}
           onChange={setInitialPayment}
           type="number"

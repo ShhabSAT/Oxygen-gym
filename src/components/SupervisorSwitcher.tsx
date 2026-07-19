@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, UserCog } from 'lucide-react'
 import { useSupervisor } from '../context/SupervisorContext'
 import { SUPERVISORS } from '../lib/constants'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
 export function SupervisorSwitcher() {
   const { supervisor, setSupervisor } = useSupervisor()
   const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -15,6 +17,13 @@ export function SupervisorSwitcher() {
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
+
+  function pick(name: string) {
+    setOpen(false)
+    // Tapping the already-active admin (or the same value) needs no confirm.
+    if (name === supervisor) return
+    setPending(name)
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -33,10 +42,7 @@ export function SupervisorSwitcher() {
           {SUPERVISORS.map((name) => (
             <button
               key={name}
-              onClick={() => {
-                setSupervisor(name)
-                setOpen(false)
-              }}
+              onClick={() => pick(name)}
               className={`flex h-11 w-full items-center px-4 text-sm font-medium transition-colors hover:bg-oxygen-red/20 ${
                 name === supervisor ? 'text-oxygen-red-light' : 'text-oxygen-silver-light'
               }`}
@@ -46,6 +52,23 @@ export function SupervisorSwitcher() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pending !== null}
+        title="تبديل المشرف"
+        message={
+          pending
+            ? `هل أنت متأكد من التبديل إلى "${pending}"؟`
+            : ''
+        }
+        confirmLabel="تأكيد"
+        cancelLabel="إلغاء"
+        onConfirm={() => {
+          if (pending) setSupervisor(pending)
+          setPending(null)
+        }}
+        onCancel={() => setPending(null)}
+      />
     </div>
   )
 }
