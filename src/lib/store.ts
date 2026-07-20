@@ -110,7 +110,7 @@ export function stripUndefined<T>(record: T): T {
  * offline, so they are still awaited normally.
  * ------------------------------------------------------------------ */
 const LATE_WRITE_FAIL_MSG = 'تعذر حفظ بعض التغييرات على الخادم — تحقق من الاتصال والصلاحيات'
-function fireWrite(writePromise: Promise<unknown>): void {
+export function fireWrite(writePromise: Promise<unknown>): void {
   void writePromise.catch((err) => {
     console.error('[store] write failed (late):', err)
     toast(LATE_WRITE_FAIL_MSG, 'error')
@@ -483,9 +483,9 @@ export async function getSubscriptionType(
   return snap.exists() ? withId(snap) : undefined
 }
 
-export async function addSubscriptionType(
+export function addSubscriptionType(
   type: Omit<SubscriptionType, 'id' | 'updated_at'>,
-): Promise<SubscriptionType> {
+): SubscriptionType {
   const record = stampUpdatedAt({ ...type, id: makeId('subscriptionTypes') })
   fireWrite(setDoc(docRef('subscriptionTypes', record.id), stripUndefined(record)))
   return record
@@ -494,31 +494,25 @@ export async function addSubscriptionType(
 export async function updateSubscriptionType(
   id: string,
   patch: Partial<Omit<SubscriptionType, 'id'>>,
-): Promise<SubscriptionType | undefined> {
+): Promise<void> {
   const ref = docRef('subscriptionTypes', id)
-  const snap = await getDoc(ref)
-  if (!snap.exists()) return undefined
-  // Field-level merge — see updateMember for rationale. Fire-and-forget.
+  // Fire-and-forget: applied to the local persistent cache immediately, so
+  // the UI reflects the change at once — even offline. No getDoc round-trip
+  // (which would add server latency when online and hang offline).
   fireWrite(updateDoc(ref, stripUndefined(stampUpdatedAt({ ...patch }))))
-  return withId<SubscriptionType>(await getDoc(ref))
 }
 
 export async function deleteSubscriptionType(
   id: string,
+  name: string,
   supervisor_name: string = 'النظام',
 ): Promise<void> {
-  const snap = await getDoc(docRef('subscriptionTypes', id))
-  const name = snap.exists() ? (snap.data() as SubscriptionType).name : id
-  // Await the delete so the local cache (and server) actually reflect the
-  // removal before any caller re-reads the list. Writes resolve as soon as
-  // the persistent local cache applies them, so this does NOT hang offline.
-  try {
-    await deleteDoc(docRef('subscriptionTypes', id))
-  } catch (err) {
-    console.error('[store] deleteSubscriptionType failed:', err)
-    toast('تعذر حذف نوع الاشتراك — تحقق من الاتصال والصلاحيات', 'error')
-    throw err
-  }
+  // Fire-and-forget: the write is applied to the local persistent cache
+  // immediately, so the UI reflects the removal at once — even offline.
+  // Firestore only resolves the returned promise on SERVER acknowledgment,
+  // so we must NOT await it (it would hang the UI while offline). The name
+  // is passed in by the caller to avoid an extra getDoc server round-trip.
+  fireWrite(deleteDoc(docRef('subscriptionTypes', id)))
   void addActivityLog({
     action_type: 'type_delete',
     description: `تم حذف نوع الاشتراك: ${name}`,
@@ -577,7 +571,9 @@ export async function resetDatabase(): Promise<void> {
     if (snap.empty) continue
     const batch = writeBatch(db)
     for (const d of snap.docs) batch.delete(d.ref)
-    await batch.commit()
+    // Fire-and-forget: queued to local cache immediately; awaiting would
+    // hang the UI while offline (the promise resolves only on server ack).
+    fireWrite(batch.commit())
   }
   await seedIfEmpty()
 }

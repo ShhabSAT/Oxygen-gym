@@ -95,7 +95,7 @@ export function AdminPage() {
   async function applySave() {
     const t = confirm2
     if (!t) return
-    await updateSubscriptionType(t.id, {
+    updateSubscriptionType(t.id, {
       price_men: t.price_men,
       price_women: t.price_women,
     })
@@ -105,10 +105,17 @@ export function AdminPage() {
       supervisor_name: supervisor,
       entity_id: t.id,
     })
+    // Optimistic update: reflect the new prices instantly from local state.
+    setTypes((prev) =>
+      prev.map((x) =>
+        x.id === t.id
+          ? { ...x, price_men: t.price_men, price_women: t.price_women }
+          : x,
+      ),
+    )
     setConfirm2(null)
     setEditId(null)
     flash('تم حفظ تغييرات الأسعار وتسجيلها في سجل النشاط')
-    await load()
   }
 
   async function addNewType() {
@@ -116,7 +123,10 @@ export function AdminPage() {
       flash('يرجى إدخال اسم النوع')
       return
     }
-    await addSubscriptionType({
+    // addSubscriptionType returns the new record synchronously (write is
+    // fire-and-forget to the local cache). Append it optimistically so the
+    // new row appears instantly — no await load() server round-trip.
+    const rec = addSubscriptionType({
       name: newName.trim(),
       price_men: newPrices.price_men,
       price_women: newPrices.price_women,
@@ -126,11 +136,11 @@ export function AdminPage() {
       description: `تمت إضافة نوع اشتراك جديد: ${newName.trim()}`,
       supervisor_name: supervisor,
     })
+    setTypes((prev) => [...prev, rec])
     setNewOpen(false)
     setNewName('')
     setNewPrices({ price_men: 0, price_women: 0 })
     flash('تمت إضافة نوع الاشتراك')
-    await load()
   }
 
   async function handleExport() {
@@ -148,14 +158,16 @@ export function AdminPage() {
     flash(`تم تصدير بيانات العملاء: ${filename}`)
   }
 
-  async function handleDeleteType() {
+  function handleDeleteType() {
     const t = deleteTarget
     if (!t) return
-    // deleteSubscriptionType performs the delete AND logs the activity.
-    await deleteSubscriptionType(t.id, supervisor)
+    // Fire-and-forget: the delete is queued to the local cache at once and
+    // syncs when online. Optimistically drop the item from the list so the
+    // dialog closes and the row vanishes instantly — no server round-trip.
+    deleteSubscriptionType(t.id, t.name, supervisor)
+    setTypes((prev) => prev.filter((x) => x.id !== t.id))
     setDeleteTarget(null)
     flash('تم حذف نوع الاشتراك')
-    await load()
   }
 
   async function handleRunBackupNow() {

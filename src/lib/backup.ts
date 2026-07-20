@@ -20,6 +20,7 @@ import {
   getActivityLogs,
   stripUndefined,
   getSubscriptionTypes,
+  fireWrite,
 } from './store'
 import { db as firestore } from './firebase'
 
@@ -197,14 +198,16 @@ async function overwriteCollection(
   if (!existingSnap.empty) {
     const delBatch = writeBatch(firestore)
     for (const d of existingSnap.docs) delBatch.delete(d.ref)
-    await delBatch.commit()
+    // Fire-and-forget: queued to local cache immediately; resolves on the
+    // server only, so awaiting would hang the UI while offline.
+    fireWrite(delBatch.commit())
   }
   // Write imported docs by id
   const batch = writeBatch(firestore)
   for (const rec of records) {
     batch.set(doc(firestore, name, rec.id), stripUndefined(rec))
   }
-  await batch.commit()
+  fireWrite(batch.commit())
 }
 
 /* ----------------------------------------------------------------
