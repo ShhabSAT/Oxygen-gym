@@ -29,7 +29,7 @@ export function SupervisorSwitcher() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex h-11 min-w-[44px] items-center gap-2 rounded-full bg-oxygen-black px-3 ring-1 ring-oxygen-silver/30 hover:ring-oxygen-red"
+        className="flex h-11 min-w-[44px] items-center gap-2 rounded-full bg-white/5 px-3 ring-1 ring-white/15 hover:bg-white/10 hover:ring-oxygen-red/80 transition-colors"
       >
         <UserCog className="h-5 w-5 text-oxygen-red" />
         <span className="text-sm font-semibold text-oxygen-silver-light">{supervisor}</span>
@@ -37,7 +37,7 @@ export function SupervisorSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute end-0 z-50 mt-2 w-44 overflow-hidden rounded-xl bg-oxygen-black ring-1 ring-oxygen-silver/20 shadow-xl shadow-black/40">
+        <div className="absolute end-0 z-50 mt-2 w-44 overflow-hidden rounded-xl bg-black/80 backdrop-blur-xl ring-1 ring-white/10 shadow-xl shadow-black/40">
           <p className="px-4 py-2 text-xs font-medium text-oxygen-silver">اختر المشرف</p>
           {SUPERVISORS.map((name) => (
             <button

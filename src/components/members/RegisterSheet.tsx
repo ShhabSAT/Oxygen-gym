@@ -16,6 +16,7 @@ import {
 } from '../../lib/store'
 import { fuzzyArabicIncludes } from '../../lib/arabic'
 import { addDays } from '../../lib/status'
+import { todayLocal } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import { useSupervisor } from '../../context/SupervisorContext'
 import type { Gender, Member, SubscriptionType } from '../../types'
@@ -140,7 +141,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
 
     const price = overridePrice ? Number(actualPrice) || 0 : computedPrice
     const paid = Number(initialPayment) || 0
-    const startDate = new Date().toISOString().slice(0, 10)
+    const startDate = todayLocal()
     const endDate = addDays(startDate, durationDays)
 
     // The store helpers queue writes into the local cache immediately

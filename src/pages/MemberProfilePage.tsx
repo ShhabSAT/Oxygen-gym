@@ -29,6 +29,7 @@ import {
   type MemberStatus,
 } from '../lib/status'
 import { formatNumber } from '../lib/format'
+import { todayLocal } from '../lib/date'
 import { EditSheet } from '../components/members/EditSheet'
 import { RenewSheet } from '../components/members/RenewSheet'
 import { PaymentSheet } from '../components/members/PaymentSheet'
@@ -311,7 +312,7 @@ export function MemberProfilePage() {
       setUnfreezeTarget(null)
       return
     }
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayLocal()
     const start = new Date(activeFreeze.start_date)
     start.setHours(0, 0, 0, 0)
     const now = new Date(today)
@@ -452,14 +453,14 @@ function SubscriptionCard({
           className={`rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${
             sub.status === 'frozen'
               ? STATUS_STYLES.frozen
-              : sub.end_date >= new Date().toISOString().slice(0, 10)
+              : sub.end_date >= todayLocal()
                 ? STATUS_STYLES.active
                 : STATUS_STYLES.expired
           }`}
         >
           {sub.status === 'frozen'
             ? STATUS_LABELS.frozen
-            : sub.end_date >= new Date().toISOString().slice(0, 10)
+            : sub.end_date >= todayLocal()
               ? STATUS_LABELS.active
               : STATUS_LABELS.expired}
         </span>

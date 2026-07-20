@@ -69,10 +69,13 @@ export async function buildBackup(): Promise<BackupData> {
   }
 }
 
-function todayStamp(): string {
+// Local (device) date+time stamp for backup filenames so the user can see
+// exactly when a backup was made in their own timezone (Syria). Uses local
+// getters, NOT toISOString(), which would be UTC and drift by up to 3h.
+function fileStamp(): string {
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`
 }
 
 function triggerDownload(blob: Blob, filename: string): void {
@@ -90,7 +93,7 @@ export async function exportBackup(): Promise<string> {
   const backup = await buildBackup()
   const json = JSON.stringify(backup, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
-  const filename = `oxygen-gym-backup-${todayStamp()}.json`
+  const filename = `oxygen-gym-backup-${fileStamp()}.json`
   triggerDownload(blob, filename)
   return filename
 }
@@ -117,7 +120,7 @@ export async function exportCustomersBackup(): Promise<string> {
   }
   const json = JSON.stringify(backup, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
-  const filename = `oxygen-gym-customers-${todayStamp()}.json`
+  const filename = `oxygen-gym-customers-${fileStamp()}.json`
   triggerDownload(blob, filename)
   return filename
 }
@@ -205,66 +208,29 @@ async function overwriteCollection(
 }
 
 /* ----------------------------------------------------------------
- * DAILY BACKUP REMINDER (per-admin / supervisor-selectable time)
- * Instead of auto-downloading, the app shows a ONE-TIME daily reminder
- * at the supervisor's chosen time (default 03:00) while the app is open,
- * prompting them to download a full backup. The time and the "reminded
- * today" flag are stored PER supervisor in localStorage, so every admin
- * gets their own schedule on their own device. The app never downloads
- * a backup by itself — only when the user taps the button.
+ * WEEKLY AUTOMATIC BACKUP
+ * The app downloads a FULL backup automatically — no time picker, no
+ * per-admin schedule. It runs the first time the app is opened on a
+ * device and then again every 7 days (while the app is open, including
+ * immediately on open). The last-run ISO timestamp lives in localStorage;
+ * isWeeklyBackupDue() checks the 7-day interval. Elapsed-time math uses
+ * Date.now(), which is timezone-independent, so it is correct in Syria.
  * ---------------------------------------------------------------- */
 
 const AUTO_BACKUP_KEY = 'oxygen_last_auto_backup'
-const AUTO_BACKUP_TIMES_KEY = 'oxygen_backup_reminder_times'
-const AUTO_BACKUP_REMINDED_KEY = 'oxygen_backup_reminder_reminded'
-export const DEFAULT_AUTO_BACKUP_TIME = '03:00'
+const WEEKLY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
 
 export function getLastAutoBackup(): string | null {
   return localStorage.getItem(AUTO_BACKUP_KEY)
 }
 
-// ---- per-supervisor reminder time ----
-function readJsonMap(key: string): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, string>
-  } catch {
-    return {}
-  }
-}
-
-export function getBackupReminderTime(supervisor: string): string {
-  return readJsonMap(AUTO_BACKUP_TIMES_KEY)[supervisor] ?? DEFAULT_AUTO_BACKUP_TIME
-}
-
-export function setBackupReminderTime(supervisor: string, time: string): void {
-  const map = readJsonMap(AUTO_BACKUP_TIMES_KEY)
-  map[supervisor] = time
-  localStorage.setItem(AUTO_BACKUP_TIMES_KEY, JSON.stringify(map))
-}
-
-// ---- per-supervisor "reminded today" flag ----
-function dayStamp(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-export function getRemindedToday(supervisor: string): string | null {
-  return readJsonMap(AUTO_BACKUP_REMINDED_KEY)[supervisor] ?? null
-}
-
-export function setRemindedToday(supervisor: string, date: Date = new Date()): void {
-  const map = readJsonMap(AUTO_BACKUP_REMINDED_KEY)
-  map[supervisor] = dayStamp(date)
-  localStorage.setItem(AUTO_BACKUP_REMINDED_KEY, JSON.stringify(map))
-}
-
-/** True if a full backup was downloaded earlier today. */
-export function backedUpToday(): boolean {
+/** True if no backup exists yet, or the last one is ≥ 7 days old. */
+export function isWeeklyBackupDue(): boolean {
   const last = getLastAutoBackup()
-  if (!last) return false
-  const d = new Date(last)
-  if (Number.isNaN(d.getTime())) return false
-  return dayStamp(d) === dayStamp(new Date())
+  if (!last) return true
+  const t = new Date(last).getTime()
+  if (Number.isNaN(t)) return true
+  return Date.now() - t >= WEEKLY_INTERVAL_MS
 }
 
 /** Download a full backup now and stamp the last-run time. */

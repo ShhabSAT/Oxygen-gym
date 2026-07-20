@@ -1,5 +1,6 @@
 import type { Member, Subscription } from '../types'
 import { getActiveSubscription } from './status'
+import { todayLocal, addDaysLocal } from './date'
 
 export interface MemberWithSubs {
   member: Member
@@ -8,15 +9,11 @@ export interface MemberWithSubs {
 }
 
 function todayDateOnly(): string {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.toISOString().slice(0, 10)
+  return todayLocal()
 }
 
 function addDaysOnly(dateStr: string, days: number): string {
-  const d = new Date(dateStr)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return addDaysLocal(dateStr, days)
 }
 
 /**

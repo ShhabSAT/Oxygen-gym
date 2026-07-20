@@ -3,6 +3,7 @@ import { BottomSheet } from '../ui/BottomSheet'
 import { TextField } from './fields'
 import { addPayment, getPaymentsBySubscription } from '../../lib/store'
 import { useSupervisor } from '../../context/SupervisorContext'
+import { todayLocal } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import type { Member, Subscription } from '../../types'
 
@@ -70,7 +71,7 @@ export function PaymentSheet({ open, member, subs, onClose, onPaid }: PaymentShe
     }
     setError('')
     setSaving(true)
-    const date = new Date().toISOString().slice(0, 10)
+    const date = todayLocal()
     // addPayment queues into the local cache instantly (the await only waits
     // on the instant cache read for the member name). Close right away.
     await addPayment(

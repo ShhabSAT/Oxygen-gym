@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { SupervisorSwitcher } from '../components/SupervisorSwitcher'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ToastHost } from '../lib/toast'
-import { BackupReminder } from './BackupReminder'
+import { WeeklyAutoBackup } from './WeeklyAutoBackup'
 import { TabRoutes } from '../components/TabRoutes'
 import { PullToRefresh } from '../components/PullToRefresh'
 import { STORAGE_KEYS } from '../lib/constants'
@@ -139,7 +139,36 @@ export function AppLayout() {
       {Sidebar}
 
       <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-oxygen-silver/10 bg-oxygen-black/95 px-4 py-3 backdrop-blur md:px-6">
+        {/*
+         * Gradient fade-out mask so content fades smoothly as it scrolls
+         * underneath the top header — from the viewport top to the header's
+         * centre.
+         */}
+        <div
+          className="fixed pointer-events-none md:hidden"
+          style={{
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 'calc(48px + env(safe-area-inset-top))',
+            background: 'linear-gradient(to bottom, #121212 0%, transparent 100%)',
+            zIndex: 30,
+          }}
+        />
+
+        {/*
+         * Floating pill-style top header — glassmorphism (mobile only).
+         * Matches the bottom nav: rounded-full, red-tinted glass, shadow.
+         * On desktop it stays sticky edge-to-edge.
+         */}
+        <header
+          className="fixed md:sticky top-3 md:top-0 z-40 left-3 right-3 md:left-auto md:right-auto flex items-center justify-between gap-3 rounded-full md:rounded-none border border-oxygen-silver/10 md:border-b md:border-x-0 md:border-t-0 shadow-lg shadow-black/40 md:shadow-none px-4 py-3 md:px-6"
+          style={{
+            backgroundColor: 'rgba(55, 10, 10, 0.4)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+          }}
+        >
           <div className="flex items-center gap-3 md:hidden">
             <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-10 w-10 object-contain" />
             <h1 className="text-lg font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
@@ -150,28 +179,45 @@ export function AppLayout() {
             <button
               onClick={() => setLogoutOpen(true)}
               aria-label="تسجيل الخروج"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-oxygen-black ring-1 ring-oxygen-silver/30 hover:ring-oxygen-red"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/15 hover:bg-white/10 hover:ring-oxygen-red/80 transition-colors"
             >
               <LogOut className="h-5 w-5 text-oxygen-silver" />
             </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden px-4 py-5 pb-28 md:pb-6 md:px-6">
+        <main className="flex-1 overflow-x-hidden px-4 pt-24 pb-28 md:py-5 md:pb-6 md:px-6">
           <PullToRefresh>
             <TabTransition />
           </PullToRefresh>
         </main>
 
         {/*
-         * Floating pill-style bottom navigation — frosted glass.
+         * Gradient fade-out mask so content fades smoothly as it scrolls
+         * underneath the bottom nav — from the nav's centre to the page
+         * bottom.
+         */}
+        <div
+          className="fixed pointer-events-none md:hidden"
+          style={{
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 'calc(56px + env(safe-area-inset-bottom))',
+            background: 'linear-gradient(to top, #121212 0%, transparent 100%)',
+            zIndex: 30,
+          }}
+        />
+
+        {/*
+         * Floating pill-style bottom navigation — glassmorphism.
          *
          *   - left/right 12px, bottom = 14px + env(safe-area-inset-bottom)
          *     → floats above the OS gesture bar on notched phones (no clip).
          *   - rounded-full        → capsule / pill shape.
-         *   - backgroundColor rgba(20,20,20,0.6) + backdrop-filter blur(18px)
-         *     → semi-transparent so scrolled content behind is visibly
-         *     softened (NOT a flat opaque bar).
+         *   - backgroundColor rgba(55,10,10,0.4) + backdrop-filter blur(18px)
+         *     → 60 % transparent glass with a red glow — scrolled content
+         *     behind is visibly softened and tinted (NOT a flat opaque bar).
          */}
         <nav
           className="fixed z-40 flex items-stretch rounded-full border border-oxygen-silver/10 shadow-lg shadow-black/40 md:hidden"
@@ -179,7 +225,7 @@ export function AppLayout() {
             left: '12px',
             right: '12px',
             bottom: 'calc(14px + env(safe-area-inset-bottom))',
-            backgroundColor: 'rgba(20, 20, 20, 0.6)',
+            backgroundColor: 'rgba(55, 10, 10, 0.4)',
             backdropFilter: 'blur(18px)',
             WebkitBackdropFilter: 'blur(18px)',
           }}
@@ -215,7 +261,7 @@ export function AppLayout() {
 
       <ToastHost />
 
-      <BackupReminder />
+      <WeeklyAutoBackup />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import {
   getSubscriptionTypes,
 } from '../../lib/store'
 import { addDays } from '../../lib/status'
+import { todayLocal } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import { useSupervisor } from '../../context/SupervisorContext'
 import type { Member, SubscriptionType } from '../../types'
@@ -86,7 +87,7 @@ export function RenewSheet({ open, member, onClose, onRenewed }: RenewSheetProps
     if (!member || !typeId || !durationDays) return
     const price = overridePrice ? Number(actualPrice) || 0 : computedPrice
     const paid = Number(initialPayment) || 0
-    const startDate = new Date().toISOString().slice(0, 10)
+    const startDate = todayLocal()
     const endDate = addDays(startDate, durationDays)
 
     setSaving(true)

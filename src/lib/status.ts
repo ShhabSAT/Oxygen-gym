@@ -7,13 +7,12 @@ import {
   updateFreeze,
   updateSubscription,
 } from './store'
+import { todayLocal, addDaysLocal, dayDiffLocal } from './date'
 
 export type { MemberStatus }
 
 function todayDateOnly(): string {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.toISOString().slice(0, 10)
+  return todayLocal()
 }
 
 export function getActiveSubscription(
@@ -58,17 +57,11 @@ export function formatDate(d: string): string {
 }
 
 export function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return addDaysLocal(dateStr, days)
 }
 
 function dayDiff(from: string, to: string): number {
-  const a = new Date(from)
-  a.setHours(0, 0, 0, 0)
-  const b = new Date(to)
-  b.setHours(0, 0, 0, 0)
-  return Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000))
+  return dayDiffLocal(from, to)
 }
 
 /**

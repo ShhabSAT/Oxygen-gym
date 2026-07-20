@@ -17,8 +17,6 @@ import {
   importBackup,
   importCustomersBackup,
   getLastAutoBackup,
-  getBackupReminderTime,
-  setBackupReminderTime,
   runAutoBackupNow,
 } from '../lib/backup'
 import { formatNumber } from '../lib/format'
@@ -54,7 +52,6 @@ export function AdminPage() {
 
   // auto-backup reminder status (per admin)
   const [lastBackup, setLastBackup] = useState<string | null>(null)
-  const [backupTime, setBackupTime] = useState(() => getBackupReminderTime(supervisor))
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -70,11 +67,6 @@ export function AdminPage() {
     setLastBackup(getLastAutoBackup())
     setLoading(false)
   }
-
-  // keep the reminder-time input in sync when the logged-in admin changes
-  useEffect(() => {
-    setBackupTime(getBackupReminderTime(supervisor))
-  }, [supervisor])
 
   useEffect(() => {
     void load()
@@ -371,27 +363,14 @@ export function AdminPage() {
           </div>
         </div>
 
-        {/* Daily auto-backup time picker */}
+        {/* Weekly automatic backup notice */}
         <div className="mt-4 rounded-xl bg-oxygen-black-deep p-3 ring-1 ring-oxygen-silver/10">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-oxygen-silver-light">
-                تذكير النسخة الاحتياطية اليومية
-              </p>
-              <p className="mt-0.5 text-xs text-oxygen-silver">
-                يظهر تذكير بإنشاء نسخة احتياطية لكل البيانات عند الساعة المحددة (مخصّص لكل مشرف).
-              </p>
-            </div>
-            <input
-              type="time"
-              value={backupTime}
-              onChange={(e) => {
-                setBackupTime(e.target.value)
-                setBackupReminderTime(supervisor, e.target.value)
-              }}
-              className="rounded-lg bg-oxygen-black px-3 py-2 text-oxygen-silver-light ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
-            />
-          </div>
+          <p className="text-sm font-semibold text-oxygen-silver-light">
+            النسخة الاحتياطية الأسبوعية
+          </p>
+          <p className="mt-0.5 text-xs text-oxygen-silver">
+            كل أسبوع يقوم النظام بتنزيل نسخة احتياطية تلقائياً لكل البيانات.
+          </p>
           <button
             onClick={handleRunBackupNow}
             disabled={busy}

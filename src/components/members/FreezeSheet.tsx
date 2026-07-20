@@ -4,6 +4,7 @@ import { TextField } from './fields'
 import { addActivityLog, addFreeze, getSubscriptionTypes, updateSubscription } from '../../lib/store'
 import { formatNumber } from '../../lib/format'
 import { addDays } from '../../lib/status'
+import { todayLocal } from '../../lib/date'
 import { useSupervisor } from '../../context/SupervisorContext'
 import type { Member, Subscription, SubscriptionType } from '../../types'
 
@@ -47,7 +48,7 @@ export function FreezeSheet({
     if (!sub || !member) return
     const duration = mode === 'fixed' ? Number(days) || 0 : 0
     if (mode === 'fixed' && !(duration > 0)) return
-    const startDate = new Date().toISOString().slice(0, 10)
+    const startDate = todayLocal()
     const endDate = mode === 'fixed' ? addDays(startDate, duration) : null
 
     setSaving(true)
