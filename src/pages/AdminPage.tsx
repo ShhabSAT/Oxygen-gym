@@ -20,6 +20,7 @@ import {
   runAutoBackupNow,
 } from '../lib/backup'
 import { formatNumber } from '../lib/format'
+import { toast } from '../lib/toast'
 
 type Prices = { price_men: number; price_women: number }
 
@@ -38,9 +39,8 @@ export function AdminPage() {
   const [newName, setNewName] = useState('')
   const [newPrices, setNewPrices] = useState<Prices>({ price_men: 0, price_women: 0 })
 
-  // double-confirm dialogs for price save
+  // single confirm dialog for saving price changes
   const [confirm1, setConfirm1] = useState<SubscriptionType | null>(null)
-  const [confirm2, setConfirm2] = useState<SubscriptionType | null>(null)
 
   // import
   const [importOpen, setImportOpen] = useState(false)
@@ -53,11 +53,10 @@ export function AdminPage() {
   // auto-backup reminder status (per admin)
   const [lastBackup, setLastBackup] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
 
-  function flash(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3200)
+  // Use the app-wide toast host for consistent, professional styling.
+  function flash(msg: string, kind: 'success' | 'error' | 'info' = 'success') {
+    toast(msg, kind)
   }
 
   async function load() {
@@ -87,13 +86,8 @@ export function AdminPage() {
     setConfirm1(next)
   }
 
-  function proceedToSecondConfirm() {
-    setConfirm2(confirm1)
-    setConfirm1(null)
-  }
-
   async function applySave() {
-    const t = confirm2
+    const t = confirm1
     if (!t) return
     updateSubscriptionType(t.id, {
       price_men: t.price_men,
@@ -113,14 +107,14 @@ export function AdminPage() {
           : x,
       ),
     )
-    setConfirm2(null)
+    setConfirm1(null)
     setEditId(null)
-    flash('تم حفظ تغييرات الأسعار وتسجيلها في سجل النشاط')
+    flash('تم تحديث نوع الاشتراك بنجاح')
   }
 
   async function addNewType() {
     if (!newName.trim()) {
-      flash('يرجى إدخال اسم النوع')
+      flash('يرجى إدخال اسم النوع', 'error')
       return
     }
     // addSubscriptionType returns the new record synchronously (write is
@@ -140,7 +134,7 @@ export function AdminPage() {
     setNewOpen(false)
     setNewName('')
     setNewPrices({ price_men: 0, price_women: 0 })
-    flash('تمت إضافة نوع الاشتراك')
+    flash('تمت إضافة نوع الاشتراك بنجاح')
   }
 
   async function handleExport() {
@@ -167,7 +161,7 @@ export function AdminPage() {
     deleteSubscriptionType(t.id, t.name, supervisor)
     setTypes((prev) => prev.filter((x) => x.id !== t.id))
     setDeleteTarget(null)
-    flash('تم حذف نوع الاشتراك')
+    flash('تم حذف نوع الاشتراك بنجاح')
   }
 
   async function handleRunBackupNow() {
@@ -193,7 +187,7 @@ export function AdminPage() {
       flash('تم الاستيراد بنجاح')
       await load()
     } else {
-      flash(`فشل الاستيراد: ${res.error ?? 'خطأ غير معروف'}`)
+      flash(`فشل الاستيراد: ${res.error ?? 'خطأ غير معروف'}`, 'error')
     }
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -470,35 +464,17 @@ export function AdminPage() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      {/* Double-confirm: step 1 */}
+      {/* Confirm saving price changes (single step) */}
       <ConfirmDialog
         open={!!confirm1}
         title="تأكيد حفظ الأسعار"
-        message="هل أنت متأكد من حفظ تغييرات الأسعار؟"
-        confirmLabel="متابعة"
-        cancelLabel="إلغاء"
-        danger
-        onConfirm={proceedToSecondConfirm}
-        onCancel={() => setConfirm1(null)}
-      />
-
-      {/* Double-confirm: step 2 (final) */}
-      <ConfirmDialog
-        open={!!confirm2}
-        title="تأكيد نهائي"
-        message="تأكيد نهائي - لا يمكن التراجع عن تغيير الأسعار بعد الحفظ."
-        confirmLabel="تأكيد نهائي وحفظ"
+        message="هل أنت متأكد من حفظ تغييرات أسعار هذا النوع؟"
+        confirmLabel="حفظ التغييرات"
         cancelLabel="إلغاء"
         danger
         onConfirm={applySave}
-        onCancel={() => setConfirm2(null)}
+        onCancel={() => setConfirm1(null)}
       />
-
-      {toast && (
-        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-oxygen-red px-4 py-2 text-sm font-semibold text-white shadow-lg">
-          {toast}
-        </div>
-      )}
     </div>
   )
 }
