@@ -1,4 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -7,6 +9,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   cancelLabel?: string
   danger?: boolean
+  icon?: ReactNode
   onConfirm: () => void
   onCancel: () => void
 }
@@ -18,6 +21,7 @@ export function ConfirmDialog({
   confirmLabel = 'تأكيد',
   cancelLabel = 'إلغاء',
   danger,
+  icon,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -30,22 +34,39 @@ export function ConfirmDialog({
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onCancel])
 
+  // Lock background scroll while any dialog is open.
+  useEffect(() => {
+    if (open) {
+      lockScroll()
+      return () => unlockScroll()
+    }
+  }, [open])
+
   if (!open) return null
 
-  return (
+  const dialog = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
       <div
-        className="absolute inset-0 bg-black/70"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-dialog-overlay"
         onClick={onCancel}
       />
-      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-oxygen-black p-5 ring-1 ring-oxygen-silver/20 shadow-lg shadow-black/50">
-        <h3 className="text-lg font-bold text-oxygen-silver-light">{title}</h3>
-        <p className="mt-2 text-sm text-oxygen-silver">{message}</p>
+      <div className="relative z-10 w-full max-w-sm animate-dialog-in rounded-2xl bg-oxygen-black p-5 ring-1 ring-oxygen-silver/20 shadow-xl shadow-black/60">
+        {icon && (
+          <div
+            className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full ${
+              danger ? 'bg-oxygen-red/15 text-oxygen-red-light' : 'bg-oxygen-silver/15 text-oxygen-silver-light'
+            }`}
+          >
+            {icon}
+          </div>
+        )}
+        <h3 className="text-center text-lg font-bold text-oxygen-silver-light">{title}</h3>
+        <p className="mt-2 text-center text-sm leading-relaxed text-oxygen-silver">{message}</p>
         <div className="mt-5 flex gap-3">
           <button
             onClick={onCancel}
@@ -56,9 +77,7 @@ export function ConfirmDialog({
           <button
             onClick={onConfirm}
             className={`h-11 flex-1 rounded-xl font-bold text-white transition-colors ${
-              danger
-                ? 'bg-oxygen-red hover:bg-oxygen-red-dark'
-                : 'bg-oxygen-red hover:bg-oxygen-red-dark'
+              danger ? 'bg-oxygen-red hover:bg-oxygen-red-dark' : 'bg-oxygen-red hover:bg-oxygen-red-dark'
             }`}
           >
             {confirmLabel}
@@ -67,4 +86,7 @@ export function ConfirmDialog({
       </div>
     </div>
   )
+
+  return createPortal(dialog, document.body)
 }
+

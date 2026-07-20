@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Download, Upload, Plus, Pencil, Save, ShieldAlert } from 'lucide-react'
+import { Download, Upload, Plus, Pencil, Save, ShieldAlert, Trash2 } from 'lucide-react'
 import { useSupervisor } from '../context/SupervisorContext'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -7,16 +7,19 @@ import {
   getSubscriptionTypes,
   addSubscriptionType,
   updateSubscriptionType,
+  deleteSubscriptionType,
   addActivityLog,
-  resetDatabase,
 } from '../lib/store'
 import type { SubscriptionType } from '../types'
 import {
   exportBackup,
-  exportMembersCsv,
+  exportCustomersBackup,
   importBackup,
+  importCustomersBackup,
   getLastAutoBackup,
-  scheduleAutoBackup,
+  getBackupReminderTime,
+  setBackupReminderTime,
+  runAutoBackupNow,
 } from '../lib/backup'
 import { formatNumber } from '../lib/format'
 
@@ -43,13 +46,15 @@ export function AdminPage() {
 
   // import
   const [importOpen, setImportOpen] = useState(false)
+  const [importScope, setImportScope] = useState<'customers' | 'all'>('all')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // reset
-  const [resetOpen, setResetOpen] = useState(false)
+  // delete subscription type
+  const [deleteTarget, setDeleteTarget] = useState<SubscriptionType | null>(null)
 
-  // auto-backup status
+  // auto-backup reminder status (per admin)
   const [lastBackup, setLastBackup] = useState<string | null>(null)
+  const [backupTime, setBackupTime] = useState(() => getBackupReminderTime(supervisor))
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -65,6 +70,11 @@ export function AdminPage() {
     setLastBackup(getLastAutoBackup())
     setLoading(false)
   }
+
+  // keep the reminder-time input in sync when the logged-in admin changes
+  useEffect(() => {
+    setBackupTime(getBackupReminderTime(supervisor))
+  }, [supervisor])
 
   useEffect(() => {
     void load()
@@ -139,18 +149,29 @@ export function AdminPage() {
     await load()
   }
 
-  async function handleReset() {
+  async function handleExportCustomers() {
     setBusy(true)
-    await resetDatabase()
+    const filename = await exportCustomersBackup()
     setBusy(false)
-    setResetOpen(false)
-    flash('تم مسح جميع البيانات وإعادة التهيئة')
+    flash(`تم تصدير بيانات العملاء: ${filename}`)
+  }
+
+  async function handleDeleteType() {
+    const t = deleteTarget
+    if (!t) return
+    // deleteSubscriptionType performs the delete AND logs the activity.
+    await deleteSubscriptionType(t.id, supervisor)
+    setDeleteTarget(null)
+    flash('تم حذف نوع الاشتراك')
     await load()
   }
 
-  async function handleExportCsv() {
-    const filename = await exportMembersCsv()
-    flash(`تم تصدير الأعضاء CSV: ${filename}`)
+  async function handleRunBackupNow() {
+    setBusy(true)
+    const res = await runAutoBackupNow()
+    setBusy(false)
+    if (res.ran && res.filename) flash(`تم إنشاء نسخة احتياطية: ${res.filename}`)
+    await load()
   }
 
   async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -159,10 +180,13 @@ export function AdminPage() {
     const text = await file.text()
     setImportOpen(false)
     setBusy(true)
-    const res = await importBackup(text)
+    const res =
+      importScope === 'customers'
+        ? await importCustomersBackup(text)
+        : await importBackup(text)
     setBusy(false)
     if (res.ok) {
-      flash('تم استيراد النسخة الاحتياطية بنجاح')
+      flash('تم الاستيراد بنجاح')
       await load()
     } else {
       flash(`فشل الاستيراد: ${res.error ?? 'خطأ غير معروف'}`)
@@ -257,13 +281,22 @@ export function AdminPage() {
                         {formatNumber(t.price_women)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => startEdit(t)}
-                      aria-label={`تعديل أسعار ${t.name}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg bg-oxygen-black text-oxygen-silver ring-1 ring-oxygen-silver/30 hover:text-oxygen-red-light"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEdit(t)}
+                        aria-label={`تعديل أسعار ${t.name}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-oxygen-black text-oxygen-silver ring-1 ring-oxygen-silver/30 hover:text-oxygen-red-light"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(t)}
+                        aria-label={`حذف ${t.name}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-oxygen-black text-oxygen-red ring-1 ring-oxygen-red/30 hover:bg-oxygen-red/15"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -281,62 +314,94 @@ export function AdminPage() {
         <p className="mt-1 text-sm text-oxygen-silver">
           {lastBackup
             ? `آخر نسخة احتياطية: ${new Date(lastBackup).toLocaleString('ar-IQ')}`
-            : 'لم يتم إجراء نسخة احتياطية تلقائية بعد.'}
+            : 'لم يتم إجراء نسخة احتياطية بعد.'}
         </p>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button
-            onClick={handleExport}
-            disabled={busy}
-            className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-red py-3 font-bold text-white hover:bg-oxygen-red-dark disabled:opacity-50"
-          >
-            <Download className="h-5 w-5" />
-            تصدير النسخة (JSON)
-          </button>
+        {/* Customers (profiles + their details) */}
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-semibold text-oxygen-silver-light">
+            بيانات العملاء (الأعضاء وتفاصيلهم)
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              onClick={handleExportCustomers}
+              disabled={busy}
+              className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-red py-3 font-bold text-white hover:bg-oxygen-red-dark disabled:opacity-50"
+            >
+              <Download className="h-5 w-5" />
+              تصدير بيانات العملاء (JSON)
+            </button>
+            <button
+              onClick={() => {
+                setImportScope('customers')
+                setImportOpen(true)
+              }}
+              disabled={busy}
+              className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 font-bold text-oxygen-silver-light ring-1 ring-oxygen-silver/30 hover:ring-oxygen-silver disabled:opacity-50"
+            >
+              <Upload className="h-5 w-5" />
+              استيراد بيانات العملاء
+            </button>
+          </div>
+        </div>
 
-          <button
-            onClick={handleExportCsv}
-            disabled={busy}
-            className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 font-bold text-oxygen-silver-light ring-1 ring-oxygen-silver/30 hover:ring-oxygen-silver disabled:opacity-50"
-          >
-            <Download className="h-5 w-5" />
-            تصدير الأعضاء (CSV)
-          </button>
+        {/* Everything */}
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-semibold text-oxygen-silver-light">كل البيانات</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              onClick={handleExport}
+              disabled={busy}
+              className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-red py-3 font-bold text-white hover:bg-oxygen-red-dark disabled:opacity-50"
+            >
+              <Download className="h-5 w-5" />
+              تصدير النسخة (JSON)
+            </button>
+            <button
+              onClick={() => {
+                setImportScope('all')
+                setImportOpen(true)
+              }}
+              disabled={busy}
+              className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 font-bold text-oxygen-silver-light ring-1 ring-oxygen-silver/30 hover:ring-oxygen-silver disabled:opacity-50"
+            >
+              <Upload className="h-5 w-5" />
+              استيراد نسخة احتياطية
+            </button>
+          </div>
+        </div>
 
+        {/* Daily auto-backup time picker */}
+        <div className="mt-4 rounded-xl bg-oxygen-black-deep p-3 ring-1 ring-oxygen-silver/10">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-oxygen-silver-light">
+                تذكير النسخة الاحتياطية اليومية
+              </p>
+              <p className="mt-0.5 text-xs text-oxygen-silver">
+                يظهر تذكير بإنشاء نسخة احتياطية لكل البيانات عند الساعة المحددة (مخصّص لكل مشرف).
+              </p>
+            </div>
+            <input
+              type="time"
+              value={backupTime}
+              onChange={(e) => {
+                setBackupTime(e.target.value)
+                setBackupReminderTime(supervisor, e.target.value)
+              }}
+              className="rounded-lg bg-oxygen-black px-3 py-2 text-oxygen-silver-light ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
+            />
+          </div>
           <button
-            onClick={() => setImportOpen(true)}
+            onClick={handleRunBackupNow}
             disabled={busy}
-            className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-red py-3 font-bold text-white hover:bg-oxygen-red-dark disabled:opacity-50"
-          >
-            <Upload className="h-5 w-5" />
-            استيراد نسخة احتياطية
-          </button>
-
-          <button
-            onClick={async () => {
-              setBusy(true)
-              const res = await scheduleAutoBackup()
-              setBusy(false)
-              if (res.ran) flash(`تم إنشاء نسخة احتياطية تلقائية: ${res.filename}`)
-              else flash('النسخة الاحتياطية التلقائية حديثة بالفعل')
-              await load()
-            }}
-            disabled={busy}
-            className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 font-bold text-oxygen-silver-light ring-1 ring-oxygen-silver/30 hover:ring-oxygen-silver disabled:opacity-50"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 font-bold text-oxygen-silver-light ring-1 ring-oxygen-silver/30 hover:ring-oxygen-silver disabled:opacity-50"
           >
             <ShieldAlert className="h-5 w-5" />
-            نسخة احتياطية الآن
-          </button>
-
-          <button
-            onClick={() => setResetOpen(true)}
-            disabled={busy}
-            className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 font-bold text-oxygen-red-light ring-1 ring-oxygen-red/40 hover:ring-oxygen-red disabled:opacity-50"
-          >
-            <ShieldAlert className="h-5 w-5" />
-            مسح جميع البيانات
+            إنشاء نسخة احتياطية الآن
           </button>
         </div>
+
         <input
           ref={fileRef}
           type="file"
@@ -389,7 +454,11 @@ export function AdminPage() {
       <ConfirmDialog
         open={importOpen}
         title="تأكيد الاستيراد"
-        message="سيؤدي استيراد النسخة الاحتياطية إلى استبدال جميع البيانات الحالية بالكامل. هل أنت متأكد؟"
+        message={
+          importScope === 'customers'
+            ? 'سيؤدي استيراد بيانات العملاء إلى استبدال الأعضاء والاشتراكات والمدفوعات والتجميد الحالية بالكامل. هل أنت متأكد؟'
+            : 'سيؤدي استيراد النسخة الاحتياطية إلى استبدال جميع البيانات الحالية بالكامل. هل أنت متأكد؟'
+        }
         confirmLabel="استيراد واستبدال"
         cancelLabel="إلغاء"
         danger
@@ -397,16 +466,17 @@ export function AdminPage() {
         onCancel={() => setImportOpen(false)}
       />
 
-      {/* Reset confirm */}
+      {/* Delete subscription type confirm */}
       <ConfirmDialog
-        open={resetOpen}
-        title="مسح جميع البيانات"
-        message="سيؤدي هذا إلى حذف جميع الأعضاء والاشتراكات والمدفوعات والسجلات نهائياً وإعادة تهيئة الأنواع الافتراضية. لا يمكن التراجع."
-        confirmLabel="مسح كل البيانات"
+        open={!!deleteTarget}
+        title="حذف نوع الاشتراك"
+        message={`هل أنت متأكد من حذف نوع الاشتراك "${deleteTarget?.name ?? ''}"؟ لا يمكن التراجع.`}
+        confirmLabel="حذف"
         cancelLabel="إلغاء"
         danger
-        onConfirm={handleReset}
-        onCancel={() => setResetOpen(false)}
+        icon={<Trash2 className="h-6 w-6" />}
+        onConfirm={handleDeleteType}
+        onCancel={() => setDeleteTarget(null)}
       />
 
       {/* Double-confirm: step 1 */}

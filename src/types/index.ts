@@ -62,6 +62,7 @@ export type ActivityActionType =
   | 'freeze_add'
   | 'freeze_update'
   | 'price_update'
+  | 'type_delete'
   | 'sync'
   | 'seed'
   | 'other';

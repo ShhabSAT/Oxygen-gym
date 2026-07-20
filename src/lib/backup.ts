@@ -96,33 +96,39 @@ export async function exportBackup(): Promise<string> {
 }
 
 /* ----------------------------------------------------------------
- * MANUAL BACKUP — CSV (members only, optional convenience export)
+ * CUSTOMER BACKUP — EXPORT (members + their details only)
+ * Exports members, subscriptions, payments and freezes — but NOT the
+ * activity log or subscription-type catalog, so restoring customers
+ * never wipes system/configuration data.
  * ---------------------------------------------------------------- */
 
-function toCsv(rows: Record<string, unknown>[]): string {
-  if (rows.length === 0) return ''
-  const headers = Object.keys(rows[0])
-  const escape = (val: unknown): string => {
-    const s = val === null || val === undefined ? '' : String(val)
-    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`
-    return s
+export async function exportCustomersBackup(): Promise<string> {
+  const [members, subscriptions, payments, freezes] = await Promise.all([
+    getMembers(),
+    getSubscriptions(),
+    getPayments(),
+    getFreezes(),
+  ])
+  const backup = {
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    scope: 'customers',
+    data: { members, subscriptions, payments, freezes },
   }
-  const lines = rows.map((r) => headers.map((h) => escape(r[h])).join(','))
-  return [headers.join(','), ...lines].join('\n')
-}
-
-export async function exportMembersCsv(): Promise<string> {
-  const members = await getMembers()
-  const csv = toCsv(members as unknown as Record<string, unknown>[])
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
-  const filename = `oxygen-gym-members-${todayStamp()}.csv`
+  const json = JSON.stringify(backup, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const filename = `oxygen-gym-customers-${todayStamp()}.json`
   triggerDownload(blob, filename)
   return filename
 }
 
 /* ----------------------------------------------------------------
  * MANUAL BACKUP — IMPORT
- * Parses a previously exported JSON file and overwrites all stores.
+ * Parses a previously exported JSON file and overwrites the chosen
+ * stores. `importBackup` replaces EVERYTHING; `importCustomersBackup`
+ * replaces only the customer data (members/subscriptions/payments/
+ * freezes), leaving the activity log and subscription-type catalog
+ * untouched.
  * ---------------------------------------------------------------- */
 
 export interface ImportResult {
@@ -131,11 +137,35 @@ export interface ImportResult {
   error?: string
 }
 
+const ALL_STORES: OxygenGymDBStores[] = [
+  'members',
+  'subscriptions',
+  'payments',
+  'freezes',
+  'activityLog',
+  'subscriptionTypes',
+]
+
+const CUSTOMER_STORES: OxygenGymDBStores[] = [
+  'members',
+  'subscriptions',
+  'payments',
+  'freezes',
+]
+
 export async function importBackup(json: string): Promise<ImportResult> {
+  return doImport(json, ALL_STORES)
+}
+
+export async function importCustomersBackup(json: string): Promise<ImportResult> {
+  return doImport(json, CUSTOMER_STORES)
+}
+
+async function doImport(json: string, storeList: OxygenGymDBStores[]): Promise<ImportResult> {
   let parsed: BackupData
   try {
     parsed = JSON.parse(json)
-  } catch (e) {
+  } catch {
     return { ok: false, counts: {}, error: 'ملف النسخة الاحتياطية غير صالح (JSON)' }
   }
 
@@ -143,15 +173,6 @@ export async function importBackup(json: string): Promise<ImportResult> {
   if (!data) {
     return { ok: false, counts: {}, error: 'بنية النسخة الاحتياطية غير مدعومة' }
   }
-
-  const storeList: OxygenGymDBStores[] = [
-    'members',
-    'subscriptions',
-    'payments',
-    'freezes',
-    'activityLog',
-    'subscriptionTypes',
-  ]
 
   const counts: Record<string, number> = {}
   for (const storeName of storeList) {
@@ -184,31 +205,77 @@ async function overwriteCollection(
 }
 
 /* ----------------------------------------------------------------
- * AUTOMATIC WEEKLY BACKUP
- * Stores the last-run date in localStorage. When more than 7 days
- * have elapsed, triggers an export download and updates the stamp.
+ * DAILY BACKUP REMINDER (per-admin / supervisor-selectable time)
+ * Instead of auto-downloading, the app shows a ONE-TIME daily reminder
+ * at the supervisor's chosen time (default 03:00) while the app is open,
+ * prompting them to download a full backup. The time and the "reminded
+ * today" flag are stored PER supervisor in localStorage, so every admin
+ * gets their own schedule on their own device. The app never downloads
+ * a backup by itself — only when the user taps the button.
  * ---------------------------------------------------------------- */
 
 const AUTO_BACKUP_KEY = 'oxygen_last_auto_backup'
-const AUTO_BACKUP_INTERVAL_DAYS = 7
+const AUTO_BACKUP_TIMES_KEY = 'oxygen_backup_reminder_times'
+const AUTO_BACKUP_REMINDED_KEY = 'oxygen_backup_reminder_reminded'
+export const DEFAULT_AUTO_BACKUP_TIME = '03:00'
 
 export function getLastAutoBackup(): string | null {
   return localStorage.getItem(AUTO_BACKUP_KEY)
 }
 
-function daysSince(dateIso: string | null): number {
-  if (!dateIso) return Infinity
-  const then = new Date(dateIso).getTime()
-  if (Number.isNaN(then)) return Infinity
-  return (Date.now() - then) / (1000 * 60 * 60 * 24)
+// ---- per-supervisor reminder time ----
+function readJsonMap(key: string): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, string>
+  } catch {
+    return {}
+  }
 }
 
-export async function scheduleAutoBackup(): Promise<{ ran: boolean; filename?: string }> {
+export function getBackupReminderTime(supervisor: string): string {
+  return readJsonMap(AUTO_BACKUP_TIMES_KEY)[supervisor] ?? DEFAULT_AUTO_BACKUP_TIME
+}
+
+export function setBackupReminderTime(supervisor: string, time: string): void {
+  const map = readJsonMap(AUTO_BACKUP_TIMES_KEY)
+  map[supervisor] = time
+  localStorage.setItem(AUTO_BACKUP_TIMES_KEY, JSON.stringify(map))
+}
+
+// ---- per-supervisor "reminded today" flag ----
+function dayStamp(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+export function getRemindedToday(supervisor: string): string | null {
+  return readJsonMap(AUTO_BACKUP_REMINDED_KEY)[supervisor] ?? null
+}
+
+export function setRemindedToday(supervisor: string, date: Date = new Date()): void {
+  const map = readJsonMap(AUTO_BACKUP_REMINDED_KEY)
+  map[supervisor] = dayStamp(date)
+  localStorage.setItem(AUTO_BACKUP_REMINDED_KEY, JSON.stringify(map))
+}
+
+/** True if a full backup was downloaded earlier today. */
+export function backedUpToday(): boolean {
   const last = getLastAutoBackup()
-  if (daysSince(last) < AUTO_BACKUP_INTERVAL_DAYS) {
-    return { ran: false }
-  }
+  if (!last) return false
+  const d = new Date(last)
+  if (Number.isNaN(d.getTime())) return false
+  return dayStamp(d) === dayStamp(new Date())
+}
+
+/** Download a full backup now and stamp the last-run time. */
+export async function createFullBackup(): Promise<string> {
   const filename = await exportBackup()
   localStorage.setItem(AUTO_BACKUP_KEY, new Date().toISOString())
+  return filename
+}
+
+/** Manual "backup now" button. */
+export async function runAutoBackupNow(): Promise<{ ran: boolean; filename?: string }> {
+  const filename = await createFullBackup()
   return { ran: true, filename }
 }

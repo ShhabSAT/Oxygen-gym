@@ -10,6 +10,7 @@ import {
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useMediaQuery } from '../../lib/useMediaQuery'
+import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
 interface BottomSheetProps {
   open: boolean
@@ -95,17 +96,16 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     }
   }, [render, open])
 
-  // Lock body scroll + Escape-to-close while mounted.
+  // Lock body scroll + Escape-to-close while mounted (shared ref-counted lock).
   useEffect(() => {
     if (!render) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKey)
     return () => {
-      document.body.style.overflow = prev
+      unlockScroll()
       document.removeEventListener('keydown', onKey)
     }
   }, [render, onClose])

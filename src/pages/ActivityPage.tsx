@@ -32,6 +32,7 @@ const ICONS: Record<ActivityActionType, LucideIcon> = {
   freeze_add: Snowflake,
   freeze_update: Sun,
   price_update: Tag,
+  type_delete: Trash2,
   sync: RefreshCw,
   seed: Tag,
   other: ScrollText,

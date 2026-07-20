@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { SupervisorSwitcher } from '../components/SupervisorSwitcher'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ToastHost } from '../lib/toast'
+import { BackupReminder } from './BackupReminder'
 import { TabRoutes } from '../components/TabRoutes'
 import { PullToRefresh } from '../components/PullToRefresh'
 import { STORAGE_KEYS } from '../lib/constants'
@@ -213,6 +214,8 @@ export function AppLayout() {
       />
 
       <ToastHost />
+
+      <BackupReminder />
     </div>
   )
 }

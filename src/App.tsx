@@ -4,7 +4,6 @@ import { SupervisorProvider } from './context/SupervisorContext'
 import { STORAGE_KEYS } from './lib/constants'
 import { processExpiredFreezes } from './lib/status'
 import { seedIfEmpty } from './lib/store'
-import { scheduleAutoBackup } from './lib/backup'
 import { whenAuthReady } from './lib/firebase'
 import { LoginPage } from './pages/LoginPage'
 import { AppLayout } from './components/AppLayout'
@@ -15,14 +14,12 @@ function App() {
   )
 
   useEffect(() => {
-    if (loggedIn) {
-      void (async () => {
-        await whenAuthReady()
-        await seedIfEmpty()
-        await processExpiredFreezes()
-        await scheduleAutoBackup()
-      })()
-    }
+    if (!loggedIn) return
+    void (async () => {
+      await whenAuthReady()
+      await seedIfEmpty()
+      await processExpiredFreezes()
+    })()
   }, [loggedIn])
 
   if (!loggedIn) {

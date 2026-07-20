@@ -129,6 +129,21 @@ function docRef(name: EntityName, id: string) {
   return doc(db, name, id)
 }
 
+/**
+ * Merge the REAL Firestore document id into the returned record.
+ *
+ * Firestore document ids are the canonical identifier, but our stored
+ * records also carry a (sometimes different) `id` field — e.g. seeded
+ * subscription types use a generated doc id (`stp_…`) while the record's
+ * own `id` field is the friendly `'visit'`. Returning `d.data()` alone
+ * would expose the wrong `id`, so any delete/edit that uses that `id`
+ * would target a non-existent document and silently no-op. Always use
+ * the document id as the record id.
+ */
+function withId<T>(snapshot: DocumentSnapshot): T & { id: string } {
+  return { ...(snapshot.data() as T), id: snapshot.id } as T & { id: string }
+}
+
 /* ----------------------------------------------------------------
  * ONLINE STATE TRACKING
  * Firestore syncs automatically; this is kept only so the UI can show
@@ -175,7 +190,7 @@ export async function addActivityLog(input: {
 export async function getActivityLogs(): Promise<ActivityLog[]> {
   const q = query(col('activityLog'), orderBy('timestamp', 'desc'))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data() as ActivityLog)
+  return snap.docs.map((d) => withId<ActivityLog>(d))
 }
 
 /* ----------------------------------------------------------------
@@ -184,12 +199,12 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
 
 export async function getMembers(): Promise<Member[]> {
   const snap = await getDocs(col('members'))
-  return snap.docs.map((d) => d.data() as Member)
+  return snap.docs.map((d) => withId<Member>(d))
 }
 
 export async function getMember(id: string): Promise<Member | undefined> {
   const snap = await getDoc(docRef('members', id))
-  return snap.exists() ? (snap.data() as Member) : undefined
+  return snap.exists() ? withId<Member>(snap) : undefined
 }
 
 export async function addMember(
@@ -222,7 +237,7 @@ export async function updateMember(
   // Fire-and-forget: the local cache applies immediately; the UI/listener
   // reflect it via the optimistic getDoc below. Server ack is not awaited.
   fireWrite(updateDoc(ref, stripUndefined(stampUpdatedAt({ ...patch }))))
-  const updated = (await getDoc(ref)).data() as Member
+  const updated = withId<Member>(await getDoc(ref))
   void addActivityLog({
     action_type: 'member_update',
     description: `تم تحديث العضو: ${updated.name}`,
@@ -254,12 +269,12 @@ export async function deleteMember(
 
 export async function getSubscriptions(): Promise<Subscription[]> {
   const snap = await getDocs(col('subscriptions'))
-  return snap.docs.map((d) => d.data() as Subscription)
+  return snap.docs.map((d) => withId<Subscription>(d))
 }
 
 export async function getSubscription(id: string): Promise<Subscription | undefined> {
   const snap = await getDoc(docRef('subscriptions', id))
-  return snap.exists() ? (snap.data() as Subscription) : undefined
+  return snap.exists() ? withId<Subscription>(snap) : undefined
 }
 
 export async function getSubscriptionsByMember(
@@ -267,7 +282,7 @@ export async function getSubscriptionsByMember(
 ): Promise<Subscription[]> {
   const q = query(col('subscriptions'), where('member_id', '==', member_id))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data() as Subscription)
+  return snap.docs.map((d) => withId<Subscription>(d))
 }
 
 export async function addSubscription(
@@ -307,7 +322,7 @@ export async function updateSubscription(
   // Field-level merge — see updateMember for rationale. Fire-and-forget.
   fireWrite(updateDoc(ref, stripUndefined(stampUpdatedAt({ ...patch }))))
 
-  const updated = (await getDoc(ref)).data() as Subscription
+  const updated = withId<Subscription>(await getDoc(ref))
   if (!skipLog) {
     const member = await getMember(updated.member_id)
     const memberName = member?.name ?? updated.member_id
@@ -345,7 +360,7 @@ export async function deleteSubscription(
 
 export async function getPayments(): Promise<Payment[]> {
   const snap = await getDocs(col('payments'))
-  return snap.docs.map((d) => d.data() as Payment)
+  return snap.docs.map((d) => withId<Payment>(d))
 }
 
 export async function getPaymentsBySubscription(
@@ -353,7 +368,7 @@ export async function getPaymentsBySubscription(
 ): Promise<Payment[]> {
   const q = query(col('payments'), where('subscription_id', '==', subscription_id))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data() as Payment)
+  return snap.docs.map((d) => withId<Payment>(d))
 }
 
 export async function addPayment(
@@ -387,7 +402,7 @@ export async function addPayment(
 
 export async function getFreezes(): Promise<Freeze[]> {
   const snap = await getDocs(col('freezes'))
-  return snap.docs.map((d) => d.data() as Freeze)
+  return snap.docs.map((d) => withId<Freeze>(d))
 }
 
 export async function getFreezesBySubscription(
@@ -395,7 +410,7 @@ export async function getFreezesBySubscription(
 ): Promise<Freeze[]> {
   const q = query(col('freezes'), where('subscription_id', '==', subscription_id))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data() as Freeze)
+  return snap.docs.map((d) => withId<Freeze>(d))
 }
 
 export async function addFreeze(
@@ -437,7 +452,7 @@ export async function updateFreeze(
   // Field-level merge — see updateMember for rationale. Fire-and-forget.
   fireWrite(updateDoc(ref, stripUndefined(stampUpdatedAt({ ...patch }))))
 
-  const updated = (await getDoc(ref)).data() as Freeze
+  const updated = withId<Freeze>(await getDoc(ref))
   if (!skipLog) {
     const sub = await getSubscription(updated.subscription_id)
     const member = sub ? await getMember(sub.member_id) : undefined
@@ -458,14 +473,14 @@ export async function updateFreeze(
 
 export async function getSubscriptionTypes(): Promise<SubscriptionType[]> {
   const snap = await getDocs(col('subscriptionTypes'))
-  return snap.docs.map((d) => d.data() as SubscriptionType)
+  return snap.docs.map((d) => withId<SubscriptionType>(d))
 }
 
 export async function getSubscriptionType(
   id: string,
 ): Promise<SubscriptionType | undefined> {
   const snap = await getDoc(docRef('subscriptionTypes', id))
-  return snap.exists() ? (snap.data() as SubscriptionType) : undefined
+  return snap.exists() ? withId(snap) : undefined
 }
 
 export async function addSubscriptionType(
@@ -485,7 +500,31 @@ export async function updateSubscriptionType(
   if (!snap.exists()) return undefined
   // Field-level merge — see updateMember for rationale. Fire-and-forget.
   fireWrite(updateDoc(ref, stripUndefined(stampUpdatedAt({ ...patch }))))
-  return (await getDoc(ref)).data() as SubscriptionType
+  return withId<SubscriptionType>(await getDoc(ref))
+}
+
+export async function deleteSubscriptionType(
+  id: string,
+  supervisor_name: string = 'النظام',
+): Promise<void> {
+  const snap = await getDoc(docRef('subscriptionTypes', id))
+  const name = snap.exists() ? (snap.data() as SubscriptionType).name : id
+  // Await the delete so the local cache (and server) actually reflect the
+  // removal before any caller re-reads the list. Writes resolve as soon as
+  // the persistent local cache applies them, so this does NOT hang offline.
+  try {
+    await deleteDoc(docRef('subscriptionTypes', id))
+  } catch (err) {
+    console.error('[store] deleteSubscriptionType failed:', err)
+    toast('تعذر حذف نوع الاشتراك — تحقق من الاتصال والصلاحيات', 'error')
+    throw err
+  }
+  void addActivityLog({
+    action_type: 'type_delete',
+    description: `تم حذف نوع الاشتراك: ${name}`,
+    supervisor_name,
+    entity_id: id,
+  })
 }
 
 /* ----------------------------------------------------------------
@@ -502,8 +541,9 @@ export async function seedIfEmpty(): Promise<void> {
     if (existing.length > 0) return
     const batch = writeBatch(db)
     for (const t of DEFAULT_SUBSCRIPTION_TYPES) {
-      const record = { ...t, updated_at: now() } as SubscriptionType
-      batch.set(docRef('subscriptionTypes', makeId('subscriptionTypes')), stripUndefined(record))
+      const id = makeId('subscriptionTypes')
+      const record = { ...t, id, updated_at: now() } as SubscriptionType
+      batch.set(docRef('subscriptionTypes', id), stripUndefined(record))
     }
     // Fire-and-forget: batch commits to local cache immediately; the
     // subscriptionTypes listener reflects them at once. Server ack not awaited.
@@ -577,28 +617,28 @@ function live<T>(
 }
 
 export function onMembersChange(cb: Listener<Member[]>, onError?: ErrHandler): Unsubscribe {
-  return live(col('members'), (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Member), cb, onError)
+  return live(col('members'), (s) => (s as QuerySnapshot).docs.map((d) => withId<Member>(d)), cb, onError)
 }
 
 export function onSubscriptionsChange(cb: Listener<Subscription[]>, onError?: ErrHandler): Unsubscribe {
-  return live(col('subscriptions'), (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Subscription), cb, onError)
+  return live(col('subscriptions'), (s) => (s as QuerySnapshot).docs.map((d) => withId<Subscription>(d)), cb, onError)
 }
 
 export function onSubscriptionTypesChange(cb: Listener<SubscriptionType[]>, onError?: ErrHandler): Unsubscribe {
-  return live(col('subscriptionTypes'), (s) => (s as QuerySnapshot).docs.map((d) => d.data() as SubscriptionType), cb, onError)
+  return live(col('subscriptionTypes'), (s) => (s as QuerySnapshot).docs.map((d) => withId<SubscriptionType>(d)), cb, onError)
 }
 
 export function onActivityLogChange(cb: Listener<ActivityLog[]>, onError?: ErrHandler): Unsubscribe {
   const q = query(col('activityLog'), orderBy('timestamp', 'desc'))
-  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => d.data() as ActivityLog), cb, onError)
+  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => withId<ActivityLog>(d)), cb, onError)
 }
 
 export function onPaymentsChange(cb: Listener<Payment[]>, onError?: ErrHandler): Unsubscribe {
-  return live(col('payments'), (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Payment), cb, onError)
+  return live(col('payments'), (s) => (s as QuerySnapshot).docs.map((d) => withId<Payment>(d)), cb, onError)
 }
 
 export function onFreezesChange(cb: Listener<Freeze[]>, onError?: ErrHandler): Unsubscribe {
-  return live(col('freezes'), (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Freeze), cb, onError)
+  return live(col('freezes'), (s) => (s as QuerySnapshot).docs.map((d) => withId<Freeze>(d)), cb, onError)
 }
 
 /* Per-entity real-time helpers (used by the member profile page). */
@@ -612,7 +652,7 @@ export function onMemberChange(
     docRef('members', id),
     (s) => {
       const snap = s as DocumentSnapshot
-      return snap.exists() ? (snap.data() as Member) : undefined
+      return snap.exists() ? withId<Member>(snap) : undefined
     },
     cb,
     onError,
@@ -625,7 +665,7 @@ export function onSubscriptionsByMemberChange(
   onError?: ErrHandler,
 ): Unsubscribe {
   const q = query(col('subscriptions'), where('member_id', '==', member_id))
-  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Subscription), cb, onError)
+  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => withId<Subscription>(d)), cb, onError)
 }
 
 export function onFreezesBySubscriptionChange(
@@ -634,7 +674,7 @@ export function onFreezesBySubscriptionChange(
   onError?: ErrHandler,
 ): Unsubscribe {
   const q = query(col('freezes'), where('subscription_id', '==', subscription_id))
-  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Freeze), cb, onError)
+  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => withId<Freeze>(d)), cb, onError)
 }
 
 export function onPaymentsBySubscriptionChange(
@@ -643,5 +683,5 @@ export function onPaymentsBySubscriptionChange(
   onError?: ErrHandler,
 ): Unsubscribe {
   const q = query(col('payments'), where('subscription_id', '==', subscription_id))
-  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => d.data() as Payment), cb, onError)
+  return live(q, (s) => (s as QuerySnapshot).docs.map((d) => withId<Payment>(d)), cb, onError)
 }
