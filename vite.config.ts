@@ -14,7 +14,7 @@ export default defineConfig({
         description: 'تطبيق إدارة نادي أكسجين الرياضي',
         lang: 'ar',
         dir: 'rtl',
-        theme_color: '#E53E3E',
+        theme_color: '#121212',
         background_color: '#121212',
         display: 'standalone',
         orientation: 'portrait',

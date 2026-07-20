@@ -155,7 +155,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
               style={{ transition: dragging ? 'none' : 'stroke-dashoffset 0.2s ease-out' }}
             />
           </svg>
-          <img src="/icon-noBG.png" alt="" className="absolute h-5 w-5 object-contain" />
+          <img src="/icon-noBG.png" alt="" className="absolute h-5 w-5 object-contain" draggable={false} onContextMenu={(e) => e.preventDefault()} />
         </div>
       </div>
 

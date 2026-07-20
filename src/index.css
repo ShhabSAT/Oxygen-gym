@@ -26,6 +26,40 @@
   }
 
   /*
+   * Kill the blue/gray tap highlight rectangle that Android Chrome
+   * shows on every tap — pure native-app feel.
+   */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Prevent images from being dragged out on touch-hold (creates a
+   * drag ghost that screams "web view").
+   */
+  img {
+    -webkit-user-drag: none;
+    user-drag: none;
+  }
+
+  /*
+   * Thin, subtle scrollbar that blends with the dark theme instead of
+   * showing a fat default browser scrollbar.
+   */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(160, 174, 192, 0.20);
+    border-radius: 2px;
+  }
+
+  /*
    * Disable native text selection on all non-interactive UI elements.
    * This prevents the browser's blue highlight + selection handles when
    * tapping/long-pressing on buttons, labels, headers, nav items, cards.

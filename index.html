@@ -16,6 +16,8 @@
     />
     <meta name="theme-color" content="#121212" />
     <meta name="description" content="تطبيق إدارة نادي أكسجين الرياضي" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -30,10 +32,17 @@
       Block iOS Safari pinch-zoom. iOS ignores user-scalable=no (since iOS 10),
       but preventing gesturestart/gesturechange stops the pinch gesture.
     -->
+    <!--
+      Block native browser context menu + image drag ghost.
+      The app has zero need for the browser's "Open in new tab /
+      Save Image / Copy" popups — everything is custom-built.
+    -->
     <script>
       document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
       document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
       document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+      document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      document.addEventListener('dragstart', function (e) { e.preventDefault(); });
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

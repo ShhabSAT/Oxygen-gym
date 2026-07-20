@@ -109,7 +109,7 @@ export function AppLayout() {
   const Sidebar = (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-s md:border-oxygen-silver/10 md:bg-oxygen-black">
       <div className="flex items-center gap-3 px-6 py-6">
-        <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-12 w-12 object-contain" />
+        <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-12 w-12 object-contain" draggable={false} onContextMenu={(e) => e.preventDefault()} />
         <h1 className="text-xl font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -170,7 +170,7 @@ export function AppLayout() {
           }}
         >
           <div className="flex items-center gap-3 md:hidden">
-            <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-10 w-10 object-contain" />
+            <img src="/icon-noBG.png" alt="Oxygen Gym" className="h-10 w-10 object-contain" draggable={false} onContextMenu={(e) => e.preventDefault()} />
             <h1 className="text-lg font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
           </div>
           <div className="hidden md:block text-sm text-oxygen-silver">نظام إدارة النادي</div>
