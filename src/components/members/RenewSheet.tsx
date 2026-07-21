@@ -64,9 +64,9 @@ export function RenewSheet({ open, member, onClose, onRenewed }: RenewSheetProps
 
   useEffect(() => {
     if (selectedType && member) {
+      if (!overridePrice) setActualPrice(computedPrice ? String(computedPrice) : '')
       const price = overridePrice ? Number(actualPrice) || 0 : computedPrice
-      if (!overridePrice) setActualPrice(String(computedPrice))
-      setInitialPayment(String(price))
+      setInitialPayment(price ? String(price) : '')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType, member, computedPrice, overridePrice])
@@ -78,8 +78,8 @@ export function RenewSheet({ open, member, onClose, onRenewed }: RenewSheetProps
   function toggleOverride(next: boolean) {
     setOverridePrice(next)
     if (!next) {
-      setActualPrice(String(computedPrice))
-      setInitialPayment(String(computedPrice))
+      setActualPrice(computedPrice ? String(computedPrice) : '')
+      setInitialPayment(computedPrice ? String(computedPrice) : '')
     }
   }
 

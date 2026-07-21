@@ -500,8 +500,9 @@ function PriceField({
         type="number"
         inputMode="numeric"
         min={0}
-        value={Number.isNaN(value) ? '' : value}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        placeholder="0"
+        value={Number.isNaN(value) || value === 0 ? '' : value}
+        onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
         className="mt-1 w-full rounded-lg bg-oxygen-black-deep px-3 py-2 text-oxygen-silver-light ring-1 ring-oxygen-silver/20 focus:ring-oxygen-red"
       />
     </div>

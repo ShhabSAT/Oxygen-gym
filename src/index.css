@@ -60,6 +60,19 @@
   }
 
   /*
+   * Hide browser-native number input spinners (up/down arrows) so the
+   * price/day fields look clean and app-like instead of web-like.
+   */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /*
    * Disable native text selection on all non-interactive UI elements.
    * This prevents the browser's blue highlight + selection handles when
    * tapping/long-pressing on buttons, labels, headers, nav items, cards.

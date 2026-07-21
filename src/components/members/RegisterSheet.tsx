@@ -109,9 +109,9 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
 
   useEffect(() => {
     if (selectedType) {
+      if (!overridePrice) setActualPrice(computedPrice ? String(computedPrice) : '')
       const price = overridePrice ? Number(actualPrice) || 0 : computedPrice
-      if (!overridePrice) setActualPrice(String(computedPrice))
-      setInitialPayment(String(price))
+      setInitialPayment(price ? String(price) : '')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType, computedPrice, overridePrice])
@@ -123,8 +123,8 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
   function toggleOverride(next: boolean) {
     setOverridePrice(next)
     if (!next) {
-      setActualPrice(String(computedPrice))
-      setInitialPayment(String(computedPrice))
+      setActualPrice(computedPrice ? String(computedPrice) : '')
+      setInitialPayment(computedPrice ? String(computedPrice) : '')
     }
   }
 
@@ -339,12 +339,12 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
             className="h-5 w-5 accent-oxygen-red"
           />
           <label htmlFor="reg-override" className="text-sm text-oxygen-silver-light">
-            تجاوز السعر المحسوب
+            سعر خاص
           </label>
         </div>
 
         <TextField
-          label={overridePrice ? 'السعر الفعلي' : 'السعر الفعلي'}
+          label={overridePrice ? 'السعر الخاص' : 'السعر الخاص'}
           value={actualPrice}
           onChange={setActualPrice}
           type="number"
