@@ -214,7 +214,7 @@ export function MemberProfilePage() {
         </button>
         <button
           onClick={() => setPayOpen(true)}
-          className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-oxygen-black font-bold text-green-400 ring-1 ring-green-500/40 transition-colors hover:bg-green-500/10"
+          className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-oxygen-black font-bold text-oxygen-red-light ring-1 ring-oxygen-red/40 transition-colors hover:bg-oxygen-red/10"
         >
           <CreditCard className="h-5 w-5" />
           تسجيل دفعة
@@ -399,7 +399,7 @@ function MemberDebt({
           {totalDebt > 0 && (
             <button
               onClick={onPay}
-              className="rounded-lg bg-green-500/20 px-3 py-1.5 text-sm font-bold text-green-400 ring-1 ring-green-500/40 hover:bg-green-500/30"
+              className="rounded-lg bg-oxygen-red/20 px-3 py-1.5 text-sm font-bold text-oxygen-red-light ring-1 ring-oxygen-red/40 hover:bg-oxygen-red/30"
             >
               دفع
             </button>
@@ -475,7 +475,7 @@ function SubscriptionCard({
 
       <div className="mt-3 flex items-center justify-between rounded-xl bg-oxygen-black-deep px-4 py-3">
         <span className="text-sm text-oxygen-silver">الدين المتبقي</span>
-        <span className={`text-lg font-extrabold ${hasDebt ? 'text-red-500' : 'text-green-400'}`}>
+        <span className={`text-lg font-extrabold ${hasDebt ? 'text-red-500' : 'text-oxygen-silver-light'}`}>
           {`${formatNumber(remaining)} ل.س`}
         </span>
       </div>
@@ -484,7 +484,7 @@ function SubscriptionCard({
         {sub.status === 'active' && (
           <button
             onClick={onPay}
-            className="flex items-center gap-1 rounded-lg bg-green-500/20 px-3 py-2 text-sm font-bold text-green-400 ring-1 ring-green-500/40 hover:bg-green-500/30"
+            className="flex items-center gap-1 rounded-lg bg-oxygen-red/20 px-3 py-2 text-sm font-bold text-oxygen-red-light ring-1 ring-oxygen-red/40 hover:bg-oxygen-red/30"
           >
             <CreditCard className="h-4 w-4" />
             دفع

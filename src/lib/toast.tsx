@@ -52,16 +52,16 @@ export function ToastHost() {
   if (items.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-20 md:top-16 z-[100] flex flex-col items-center gap-2 px-4">
       {items.map((it) => (
         <div
           key={it.id}
           className={
             'pointer-events-auto max-w-sm rounded-xl px-4 py-3 text-sm font-medium shadow-lg ring-1 ' +
             (it.kind === 'error'
-              ? 'bg-red-500/95 text-white ring-red-300/40'
+              ? 'bg-oxygen-black-deep/95 text-oxygen-silver-light ring-red-500/40'
               : it.kind === 'success'
-                ? 'bg-emerald-500/95 text-white ring-emerald-300/40'
+                ? 'bg-oxygen-black-deep/95 text-oxygen-silver-light ring-green-500/30'
                 : 'bg-oxygen-black-deep/95 text-oxygen-silver-light ring-oxygen-silver/30')
           }
           role="alert"

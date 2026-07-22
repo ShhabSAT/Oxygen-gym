@@ -21,6 +21,7 @@ import { PTR_EVENT } from '../components/PullToRefresh'
 import {
   getOutstandingDebts,
   groupExpiringSoon,
+  getExpiredMembers,
   type MemberWithSubs,
 } from '../lib/dashboard'
 import { formatDate } from '../lib/status'
@@ -29,6 +30,7 @@ import { useSupervisor } from '../context/SupervisorContext'
 import { RegisterSheet } from '../components/members/RegisterSheet'
 import { RenewSheet } from '../components/members/RenewSheet'
 import { PaymentSheet } from '../components/members/PaymentSheet'
+import { BottomSheet } from '../components/ui/BottomSheet'
 import type { Member, Subscription, Payment } from '../types'
 
 export function DashboardPage() {
@@ -49,6 +51,7 @@ export function DashboardPage() {
   const [payMember, setPayMember] = useState<Member | null>(null)
   const [paySubs, setPaySubs] = useState<Subscription[]>([])
   const [payOpen, setPayOpen] = useState(false)
+  const [expiredOpen, setExpiredOpen] = useState(false)
 
   function groupByMember(subs: Subscription[]): Map<string, Subscription[]> {
     const map = new Map<string, Subscription[]>()
@@ -102,6 +105,7 @@ export function DashboardPage() {
 
   const expiring = groupExpiringSoon(members, subsByMember)
   const debts = getOutstandingDebts(members, subsByMember, paymentsBySub)
+  const expired = getExpiredMembers(members, subsByMember)
 
   async function openRenew(memberId: string) {
     const mem = await getMember(memberId)
@@ -165,9 +169,64 @@ export function DashboardPage() {
         <p className="py-10 text-center text-oxygen-silver">جارٍ التحميل…</p>
       ) : (
         <>
+          {/* Expired members — most recent 3 */}
+          <section className="flex flex-col gap-3">
+            <h3 className="flex items-center gap-2 text-lg font-bold text-oxygen-silver-light">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              اشتراكات منتهية
+              {expired.length > 0 && (
+                <span className="rounded-full bg-oxygen-black px-2 py-0.5 text-xs font-bold text-amber-400 ring-1 ring-oxygen-silver/20">
+                  {expired.length}
+                </span>
+              )}
+            </h3>
+
+            {expired.length === 0 ? (
+              <p className="rounded-xl bg-oxygen-black p-4 text-oxygen-silver">
+                لا توجد اشتراكات منتهية. ممتاز!
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2">
+                  {expired.slice(0, 3).map(({ member, active }) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-oxygen-black p-4 ring-1 ring-oxygen-silver/10"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-oxygen-silver-light">
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-oxygen-silver">
+                          انتهى في: {active ? formatDate(active.end_date) : '—'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => void openRenew(member.id)}
+                        className="flex shrink-0 items-center gap-1 rounded-lg bg-oxygen-red/15 px-3 py-2 text-sm font-bold text-oxygen-red-light transition-colors hover:bg-oxygen-red/25"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        تجديد
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {expired.length > 3 && (
+                  <button
+                    onClick={() => setExpiredOpen(true)}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-oxygen-black py-3 text-sm font-bold text-oxygen-silver-light ring-1 ring-oxygen-silver/30 hover:ring-oxygen-silver"
+                  >
+                    عرض الكل ({expired.length})
+                  </button>
+                )}
+              </>
+            )}
+          </section>
+
           {/* Expiring alerts */}
           <ExpirySection
-            icon={AlertTriangle}
+            icon={CalendarClock}
             title="اشتراكات تنتهي اليوم"
             accent="red"
             items={expiring.today}
@@ -252,6 +311,39 @@ export function DashboardPage() {
         onClose={() => setPayOpen(false)}
         onPaid={() => {}}
       />
+      <BottomSheet
+        open={expiredOpen}
+        onClose={() => setExpiredOpen(false)}
+        title="جميع الاشتراكات المنتهية"
+      >
+        <div className="flex flex-col gap-2">
+          {expired.map(({ member, active }) => (
+            <div
+              key={member.id}
+              className="flex items-center justify-between gap-3 rounded-xl bg-oxygen-black p-4 ring-1 ring-oxygen-silver/10"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-oxygen-silver-light">
+                  {member.name}
+                </p>
+                <p className="text-xs text-oxygen-silver">
+                  انتهى في: {active ? formatDate(active.end_date) : '—'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setExpiredOpen(false)
+                  void openRenew(member.id)
+                }}
+                className="flex shrink-0 items-center gap-1 rounded-lg bg-oxygen-red/15 px-3 py-2 text-sm font-bold text-oxygen-red-light transition-colors hover:bg-oxygen-red/25"
+              >
+                <RefreshCw className="h-4 w-4" />
+                تجديد
+              </button>
+            </div>
+          ))}
+        </div>
+      </BottomSheet>
     </div>
   )
 }
