@@ -24,6 +24,7 @@ import {
   getExpiredMembers,
   type MemberWithSubs,
 } from '../lib/dashboard'
+import { filterVisibleMembers } from '../lib/filter'
 import { formatDate } from '../lib/status'
 import { formatNumber } from '../lib/format'
 import { useSupervisor } from '../context/SupervisorContext'
@@ -103,9 +104,10 @@ export function DashboardPage() {
     return () => window.removeEventListener(PTR_EVENT, onPtr)
   }, [retry])
 
-  const expiring = groupExpiringSoon(members, subsByMember)
-  const debts = getOutstandingDebts(members, subsByMember, paymentsBySub)
-  const expired = getExpiredMembers(members, subsByMember)
+  const visible = filterVisibleMembers(members, supervisor)
+  const expiring = groupExpiringSoon(visible, subsByMember)
+  const debts = getOutstandingDebts(visible, subsByMember, paymentsBySub)
+  const expired = getExpiredMembers(visible, subsByMember)
 
   async function openRenew(memberId: string) {
     const mem = await getMember(memberId)

@@ -36,6 +36,7 @@ import { PaymentSheet } from '../components/members/PaymentSheet'
 import { FreezeSheet } from '../components/members/FreezeSheet'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { useSupervisor } from '../context/SupervisorContext'
+import { canSeeMember } from '../lib/filter'
 import type {
   Freeze,
   Member,
@@ -149,6 +150,20 @@ export function MemberProfilePage() {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-oxygen-silver">
         <p>العضو غير موجود</p>
+        <button
+          onClick={() => navigate('/members')}
+          className="rounded-xl bg-oxygen-red px-4 py-2 font-bold text-white"
+        >
+          العودة للقائمة
+        </button>
+      </div>
+    )
+  }
+
+  if (!canSeeMember(member, supervisor)) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16 text-oxygen-silver">
+        <p>غير مسموح بعرض هذا العضو</p>
         <button
           onClick={() => navigate('/members')}
           className="rounded-xl bg-oxygen-red px-4 py-2 font-bold text-white"

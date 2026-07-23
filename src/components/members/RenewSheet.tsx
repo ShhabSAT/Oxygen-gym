@@ -157,7 +157,7 @@ export function RenewSheet({ open, member, onClose, onRenewed }: RenewSheetProps
             className="h-12 rounded-xl bg-oxygen-black-deep px-4 text-white outline-none ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
           >
             <option value="">اختر النوع</option>
-            {types.map((t) => (
+            {types.filter((t) => !t.deleted).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name} ({member?.gender === 'women' ? t.price_women : t.price_men})
               </option>

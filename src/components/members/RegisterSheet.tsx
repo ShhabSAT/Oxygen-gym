@@ -19,6 +19,7 @@ import { addDays } from '../../lib/status'
 import { todayLocal } from '../../lib/date'
 import { formatNumber } from '../../lib/format'
 import { useSupervisor } from '../../context/SupervisorContext'
+import { filterVisibleMembers } from '../../lib/filter'
 import type { Gender, Member, SubscriptionType } from '../../types'
 
 interface RegisterSheetProps {
@@ -39,7 +40,9 @@ const CUSTOM_DURATION = -1
 export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProps) {
   const { supervisor } = useSupervisor()
   const [name, setName] = useState('')
-  const [gender, setGender] = useState<Gender>('men')
+  const [gender, setGender] = useState<Gender>(
+    () => (supervisor === 'مشرف ن1' || supervisor === 'مشرف ن2' ? 'women' : 'men'),
+  )
   const [phone, setPhone] = useState('')
   const [goal, setGoal] = useState('')
   const [notes, setNotes] = useState('')
@@ -60,10 +63,12 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
 
   useEffect(() => {
     if (open) {
-      void getMembers().then(setAllMembers)
+      void getMembers().then((list) => {
+        setAllMembers(filterVisibleMembers(list, supervisor))
+      })
       void getSubscriptionTypes().then(setTypes)
     }
-  }, [open])
+  }, [open, supervisor])
 
   useEffect(() => {
     if (!open) {
@@ -71,7 +76,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
       setPhone('')
       setGoal('')
       setNotes('')
-      setGender('men')
+      setGender(supervisor === 'مشرف ن1' || supervisor === 'مشرف ن2' ? 'women' : 'men')
       setTypeId('')
       setDurationMode(30)
       setCustomDays('')
@@ -289,7 +294,7 @@ export function RegisterSheet({ open, onClose, onRegistered }: RegisterSheetProp
             className="h-12 rounded-xl bg-oxygen-black-deep px-4 text-white outline-none ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
           >
             <option value="">اختر النوع</option>
-            {types.map((t) => (
+            {types.filter((t) => !t.deleted).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name} ({gender === 'women' ? t.price_women : t.price_men})
               </option>

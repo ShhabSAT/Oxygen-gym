@@ -62,7 +62,7 @@ export function AdminPage() {
   async function load() {
     setLoading(true)
     const list = await getSubscriptionTypes()
-    setTypes(list)
+    setTypes(list.filter((t) => !t.deleted))
     setLastBackup(getLastAutoBackup())
     setLoading(false)
   }

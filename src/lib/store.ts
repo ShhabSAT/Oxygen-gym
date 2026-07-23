@@ -211,7 +211,11 @@ export async function addMember(
   member: Omit<Member, 'id' | 'updated_at'>,
   supervisor_name: string = 'النظام',
 ): Promise<Member> {
-  const record = stampUpdatedAt({ ...member, id: makeId('members') })
+  const record = stampUpdatedAt({
+    ...member,
+    id: makeId('members'),
+    registered_by: supervisor_name,
+  })
   fireWrite(setDoc(docRef('members', record.id), stripUndefined(record)))
   // Non-blocking activity log (also fire-and-forget internally).
   void addActivityLog({
@@ -507,12 +511,21 @@ export async function deleteSubscriptionType(
   name: string,
   supervisor_name: string = 'النظام',
 ): Promise<void> {
-  // Fire-and-forget: the write is applied to the local persistent cache
-  // immediately, so the UI reflects the removal at once — even offline.
-  // Firestore only resolves the returned promise on SERVER acknowledgment,
-  // so we must NOT await it (it would hang the UI while offline). The name
-  // is passed in by the caller to avoid an extra getDoc server round-trip.
-  fireWrite(deleteDoc(docRef('subscriptionTypes', id)))
+  // Check if any subscriptions reference this type.
+  // getDocs reads from the local cache when offline (and is instant there).
+  const q = query(col('subscriptions'), where('type_id', '==', id))
+  const snap = await getDocs(q)
+  const inUse = snap.size > 0
+
+  if (inUse) {
+    // Soft-delete: mark as deleted so historical lookups (profile page,
+    // activity logs, freeze sheets) still resolve the type name.
+    fireWrite(updateDoc(docRef('subscriptionTypes', id), { deleted: true, updated_at: now() }))
+  } else {
+    // No subscriptions reference this type — safe to hard-delete.
+    fireWrite(deleteDoc(docRef('subscriptionTypes', id)))
+  }
+
   void addActivityLog({
     action_type: 'type_delete',
     description: `تم حذف نوع الاشتراك: ${name}`,

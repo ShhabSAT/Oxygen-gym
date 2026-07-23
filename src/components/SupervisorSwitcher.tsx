@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, UserCog } from 'lucide-react'
 import { useSupervisor } from '../context/SupervisorContext'
-import { SUPERVISORS } from '../lib/constants'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 
 export function SupervisorSwitcher() {
-  const { supervisor, setSupervisor } = useSupervisor()
+  const { supervisor, setSupervisor, allowedSupervisors } = useSupervisor()
+
+  // Accounts with a single fixed supervisor don't need a switcher.
+  if (allowedSupervisors.length <= 1) return null
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
@@ -39,7 +41,7 @@ export function SupervisorSwitcher() {
       {open && (
         <div className="absolute end-0 z-50 mt-2 w-44 overflow-hidden rounded-xl bg-black/80 backdrop-blur-xl ring-1 ring-white/10 shadow-xl shadow-black/40">
           <p className="px-4 py-2 text-xs font-medium text-oxygen-silver">اختر المشرف</p>
-          {SUPERVISORS.map((name) => (
+          {allowedSupervisors.map((name) => (
             <button
               key={name}
               onClick={() => pick(name)}

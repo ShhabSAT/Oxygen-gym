@@ -15,6 +15,7 @@ import {
 import { onActivityLogChange } from '../lib/store'
 import { useLiveData, type LiveSource } from '../lib/useLiveData'
 import { PTR_EVENT } from '../components/PullToRefresh'
+import { useSupervisor } from '../context/SupervisorContext'
 import type { ActivityActionType, ActivityLog } from '../types'
 
 const ICONS: Record<ActivityActionType, LucideIcon> = {
@@ -50,6 +51,7 @@ function formatDateTime(ts: number): string {
 }
 
 export function ActivityPage() {
+  const { supervisor, allowedSupervisors } = useSupervisor()
   const [logs, setLogs] = useState<ActivityLog[]>([])
 
   const sources: LiveSource<unknown>[] = [
@@ -74,7 +76,12 @@ export function ActivityPage() {
     return () => window.removeEventListener(PTR_EVENT, onPtr)
   }, [retry])
 
-  const items = useMemo(() => logs, [logs])
+  // Multi‑supervisor accounts (طارق / رامي) see all logs.
+  // Single‑supervisor accounts only see their own activity.
+  const visibleLogs = useMemo(() => {
+    if (allowedSupervisors.length > 1) return logs
+    return logs.filter((l) => l.supervisor_name === supervisor)
+  }, [logs, supervisor, allowedSupervisors])
 
   return (
     <div className="flex flex-col gap-5">
@@ -96,13 +103,13 @@ export function ActivityPage() {
         </div>
       ) : loading ? (
         <p className="py-10 text-center text-oxygen-silver">جارٍ التحميل…</p>
-      ) : items.length === 0 ? (
+      ) : visibleLogs.length === 0 ? (
         <p className="rounded-xl bg-oxygen-black p-6 text-center text-oxygen-silver">
           لا يوجد نشاطات بعد
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {items.map((log) => {
+          {visibleLogs.map((log) => {
             const Icon = ICONS[log.action_type] ?? ScrollText
             return (
               <li

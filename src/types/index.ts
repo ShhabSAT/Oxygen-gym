@@ -11,6 +11,7 @@ export interface Member {
   notes?: string;
   first_registration_date: string;
   status: MemberStatus;
+  registered_by?: string;
   updated_at?: number;
 }
 
@@ -82,6 +83,7 @@ export interface SubscriptionType {
   name: string;
   price_men: number;
   price_women: number;
+  deleted?: boolean;
   updated_at?: number;
 }
 

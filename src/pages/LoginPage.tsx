@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { LogIn, Eye, EyeOff } from 'lucide-react'
-import { AUTH_CREDENTIALS, STORAGE_KEYS } from '../lib/constants'
+import { ADMIN_ACCOUNTS, STORAGE_KEYS } from '../lib/constants'
 
 export function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState('')
@@ -10,8 +10,16 @@ export function LoginPage({ onLogin }: { onLogin: () => void }) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (username === AUTH_CREDENTIALS.username && password === AUTH_CREDENTIALS.password) {
+    const account = ADMIN_ACCOUNTS.find(
+      (a) => a.username === username && a.password === password,
+    )
+    if (account) {
       localStorage.setItem(STORAGE_KEYS.loggedIn, 'true')
+      localStorage.setItem(STORAGE_KEYS.account, account.username)
+      // Single-supervisor accounts auto-set the supervisor on login.
+      if (account.supervisors.length === 1) {
+        localStorage.setItem(STORAGE_KEYS.supervisor, account.supervisors[0])
+      }
       setError('')
       onLogin()
     } else {

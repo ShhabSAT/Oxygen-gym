@@ -16,6 +16,8 @@ import {
 import { useLiveData, type LiveSource } from '../lib/useLiveData'
 import { PTR_EVENT } from '../components/PullToRefresh'
 import { RegisterSheet } from '../components/members/RegisterSheet'
+import { useSupervisor } from '../context/SupervisorContext'
+import { filterVisibleMembers } from '../lib/filter'
 import type {
   Gender,
   Member,
@@ -36,6 +38,7 @@ const GENDER_LABELS: Record<Gender, string> = { men: 'ذكور', women: 'إنا�
 
 export function MembersPage() {
   const navigate = useNavigate()
+  const { supervisor } = useSupervisor()
 
   const [members, setMembers] = useState<Member[]>([])
   const [subsByMember, setSubsByMember] = useState<Record<string, Subscription[]>>({})
@@ -85,8 +88,13 @@ export function MembersPage() {
     return () => window.removeEventListener(PTR_EVENT, onPtr)
   }, [retry])
 
+  const visibleMembers = useMemo(
+    () => filterVisibleMembers(members, supervisor),
+    [members, supervisor],
+  )
+
   const filtered = useMemo(() => {
-    return members.filter((m) => {
+    return visibleMembers.filter((m) => {
       // Skip empty/stub profiles (no name or whitespace-only name)
       if (!m.name?.trim()) return false
       if (genderFilter !== 'all' && m.gender !== genderFilter) return false
@@ -102,7 +110,7 @@ export function MembersPage() {
       }
       return true
     })
-  }, [members, subsByMember, genderFilter, statusFilter, typeFilter, search])
+    }, [visibleMembers, subsByMember, genderFilter, statusFilter, typeFilter, search])
 
   return (
     <div className="flex flex-col gap-4">
@@ -174,7 +182,7 @@ export function MembersPage() {
             className="h-11 w-full appearance-none rounded-xl bg-oxygen-black ps-4 pe-10 text-white outline-none ring-1 ring-oxygen-silver/30 focus:ring-oxygen-red"
           >
             <option value="all">كل أنواع الاشتراكات</option>
-            {types.map((t) => (
+            {types.filter((t) => !t.deleted).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
