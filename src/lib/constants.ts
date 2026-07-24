@@ -6,9 +6,9 @@ export interface AdminAccount {
 }
 
 export const ADMIN_ACCOUNTS: AdminAccount[] = [
-  { username: 'admin', password: 'oxygen123', supervisors: ['طارق', 'رامي'] },
-  { username: 'n1',    password: 'n1_oxygen',  supervisors: ['مشرف ن1'] },
-  { username: 'n2',    password: 'n2_oxygen',  supervisors: ['مشرف ن2'] },
+  { username: 'o2gym',    password: 'o2gym1125', supervisors: ['طارق', 'رامي'] },
+  { username: 'coach w 1', password: 'w1o2gym',    supervisors: ['مشرف ن1'] },
+  { username: 'coach w 2', password: 'w2o2gym',    supervisors: ['مشرف ن2'] },
 ]
 
 export const STORAGE_KEYS = {
