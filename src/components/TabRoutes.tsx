@@ -1,9 +1,10 @@
-import { Routes, Route, type Location } from 'react-router-dom'
+import { Routes, Route, Navigate, type Location } from 'react-router-dom'
 import { DashboardPage } from '../pages/DashboardPage'
 import { MembersPage } from '../pages/MembersPage'
 import { MemberProfilePage } from '../pages/MemberProfilePage'
 import { ActivityPage } from '../pages/ActivityPage'
 import { AdminPage } from '../pages/AdminPage'
+import { useSupervisor } from '../context/SupervisorContext'
 
 /**
  * Renders the full app route tree for a GIVEN location.
@@ -14,13 +15,16 @@ import { AdminPage } from '../pages/AdminPage'
  * in) — without either copy re-reading the live router location.
  */
 export function TabRoutes({ location }: { location: Location }) {
+  const { allowedSupervisors } = useSupervisor()
+  const isAdminAccount = allowedSupervisors.length > 1
+
   return (
     <Routes location={location}>
       <Route path="/" element={<DashboardPage />} />
       <Route path="/members" element={<MembersPage />} />
       <Route path="/members/:id" element={<MemberProfilePage />} />
       <Route path="/activity" element={<ActivityPage />} />
-      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin" element={isAdminAccount ? <AdminPage /> : <Navigate to="/" replace />} />
     </Routes>
   )
 }

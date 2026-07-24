@@ -3,6 +3,7 @@ import { NavLink, useLocation, type Location } from 'react-router-dom'
 import { Home, Users, ScrollText, SlidersHorizontal, LogOut } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SupervisorSwitcher } from '../components/SupervisorSwitcher'
+import { useSupervisor } from '../context/SupervisorContext'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ToastHost } from '../lib/toast'
 import { WeeklyAutoBackup } from './WeeklyAutoBackup'
@@ -105,6 +106,10 @@ function TabTransition() {
 
 export function AppLayout() {
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const { allowedSupervisors } = useSupervisor()
+  const navItems = allowedSupervisors.length > 1
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter(item => item.to !== '/admin')
 
   const Sidebar = (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-s md:border-oxygen-silver/10 md:bg-oxygen-black">
@@ -113,7 +118,7 @@ export function AppLayout() {
         <h1 className="text-xl font-extrabold text-oxygen-silver-light">Oxygen Gym</h1>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -230,7 +235,7 @@ export function AppLayout() {
             WebkitBackdropFilter: 'blur(18px)',
           }}
         >
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
